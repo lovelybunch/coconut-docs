@@ -1,0 +1,2515 @@
+# 🥥 Coconut Docs
+
+> Coconut Docs
+
+## GAIT: Agent-Native Source Control Management System
+
+### Product Specification v2.1 - File-First Architecture
+
+#### Executive Summary
+
+GAIT (Git-Adjacent Intent Tracking) is a revolutionary source control management system designed for the era of agentic engineering and multi-role collaboration. Unlike traditional VCS that focuses on line-by-line changes, GAIT treats intent, plans, experiments, and product operations as first-class citizens alongside code.
+
+**v1 Philosophy**: Start simple with file-based storage in `.gait/` directory, enabling immediate adoption without infrastructure requirements. All data lives alongside your code, versioned with git.
+
+**v2 Evolution**: Progressive enhancement with optional PostgreSQL for advanced features like cross-repo dashboards and real-time collaboration, while maintaining files as the source of truth.
+
+#### Vision Statement
+
+Transform software development from a code-centric to an intent-centric workflow, where product managers, designers, engineers, and AI agents collaborate seamlessly through a unified interface that bridges the gap between business requirements and technical implementation.
+
+***
+
+### Core Problems Solved
+
+#### Traditional SCM Limitations
+
+* **Line diffs ≠ intent**: Current systems track what changed, not why or how
+* **Semantic-blind merges**: Text-based merging misses structural understanding
+* **No provenance**: Missing context about prompts, tools, datasets, and decision rationale
+* **Poor coordination**: Multiple agents/humans racing on files without task-level isolation
+* **Missing governance**: No built-in risk gates, policy checks, or review requirements
+* **Disconnected product ops**: PRDs, experiments, and feature flags live separately from code
+
+#### Multi-Role Collaboration Gaps
+
+* Non-technical stakeholders excluded from technical planning
+* AI agents lack structured ways to propose and track changes
+* Experiments and feature flags managed in isolation from code changes
+* No unified view of product delivery across roles
+
+***
+
+### Core Architecture
+
+#### Technology Stack
+
+##### v1 - File-First (MVP)
+
+**No database required - everything in `.gait/` directory**
+
+**Full-Stack Framework**
+
+* **Next.js 14+**: Unified React framework with App Router
+* **TypeScript**: End-to-end type safety
+* **File Storage**: Markdown files with YAML frontmatter in `.gait/`
+* **Local State**: React Context + localStorage for UI state
+
+**UI & Design System**
+
+* **shadcn/ui**: Modern, accessible component library
+* **Tailwind CSS**: Utility-first styling
+* **Radix UI**: Headless UI primitives
+* **Lucide Icons**: Comprehensive icon set
+* **Recharts**: Data visualization
+* **cmdk**: Command palette for power users
+
+**Data Layer (v1)**
+
+* **gray-matter**: Parse YAML frontmatter from markdown
+* **fs/promises**: Async file operations
+* **chokidar**: File system watching for real-time updates
+* **fuse.js**: Client-side fuzzy search
+* **json-schema**: Validation for YAML frontmatter
+
+**AI Integration**
+
+* **Vercel AI SDK**: Unified AI integration
+* **OpenAI/Anthropic SDKs**: Direct model access
+
+**Development**
+
+* **pnpm**: Fast, efficient package management
+* **Docker**: Optional dev containers
+* **Vitest**: Fast unit testing
+
+##### v2 - Progressive Enhancement (Future)
+
+**Optional PostgreSQL for advanced features**
+
+* **PostgreSQL**: Metadata indexing and cross-repo queries
+* **Prisma ORM**: Type-safe database access
+* **Redis**: Caching and real-time features
+* **BullMQ**: Background job processing
+* **Socket.io/Pusher**: Real-time collaboration
+
+#### Storage Architecture
+
+##### v1 - File-Based Storage Pattern
+
+```typescript
+// Abstract storage interface - implement once, swap later
+interface StorageAdapter {
+  // Core CRUD operations
+  createCP(cp: ChangeProposal): Promise<void>;
+  getCP(id: string): Promise<ChangeProposal | null>;
+  updateCP(id: string, cp: Partial<ChangeProposal>): Promise<void>;
+  deleteCP(id: string): Promise<void>;
+  
+  // Query operations
+  listCPs(filter?: CPFilter): Promise<ChangeProposal[]>;
+  searchCPs(query: string): Promise<ChangeProposal[]>;
+  
+  // Bulk operations
+  getCPsByStatus(status: ProposalStatus): Promise<ChangeProposal[]>;
+  getCPsByAuthor(authorId: string): Promise<ChangeProposal[]>;
+}
+
+// v1 Implementation - Pure file-based
+export class FileStorageAdapter implements StorageAdapter {
+  private basePath = '.gait/proposals';
+  
+  async createCP(cp: ChangeProposal): Promise<void> {
+    const { content, ...frontmatter } = cp;
+    const markdown = matter.stringify(content || '', frontmatter);
+    await fs.writeFile(`${this.basePath}/${cp.id}.md`, markdown);
+  }
+  
+  async listCPs(filter?: CPFilter): Promise<ChangeProposal[]> {
+    const files = await fs.readdir(this.basePath);
+    const proposals = await Promise.all(
+      files
+        .filter(f => f.endsWith('.md'))
+        .map(f => this.getCP(f.replace('.md', '')))
+    );
+    
+    // Apply filters in memory
+    return proposals.filter(cp => {
+      if (!cp) return false;
+      if (filter?.status && cp.status !== filter.status) return false;
+      if (filter?.author && cp.author.id !== filter.author) return false;
+      return true;
+    });
+  }
+  
+  async searchCPs(query: string): Promise<ChangeProposal[]> {
+    const allCPs = await this.listCPs();
+    // Use Fuse.js for fuzzy searching
+    const fuse = new Fuse(allCPs, {
+      keys: ['intent', 'content', 'author.name'],
+      threshold: 0.3
+    });
+    return fuse.search(query).map(result => result.item);
+  }
+}
+
+// v2 Implementation - Hybrid with PostgreSQL caching
+export class HybridStorageAdapter implements StorageAdapter {
+  private fileAdapter = new FileStorageAdapter();
+  private db = new PrismaClient();
+  
+  async createCP(cp: ChangeProposal): Promise<void> {
+    // Write to file (source of truth)
+    await this.fileAdapter.createCP(cp);
+    
+    // Index in database for fast queries
+    await this.db.proposal.create({
+      data: {
+        cpId: cp.id,
+        intent: cp.intent,
+        status: cp.status,
+        authorId: cp.author.id,
+        contentPath: `${cp.id}.md`
+      }
+    });
+  }
+  
+  async listCPs(filter?: CPFilter): Promise<ChangeProposal[]> {
+    // Try database first for speed
+    try {
+      const proposals = await this.db.proposal.findMany({
+        where: filter,
+        orderBy: { createdAt: 'desc' }
+      });
+      // Hydrate with full content from files
+      return Promise.all(
+        proposals.map(p => this.fileAdapter.getCP(p.cpId))
+      );
+    } catch {
+      // Fallback to file-based if DB unavailable
+      return this.fileAdapter.listCPs(filter);
+    }
+  }
+}
+```
+
+#### Repository Structure
+
+```
+project-root/
+├── .gait/                      # GAIT data directory (v1 - only storage)
+│   ├── config.json            # Repository configuration
+│   ├── proposals/             # Change proposals as markdown files
+│   │   ├── cp-2024-001.md
+│   │   ├── cp-2024-002.md
+│   │   └── ...
+│   ├── specs/                 # Product specifications
+│   │   └── auth/
+│   │       └── 2fa.spec.md
+│   ├── flags/                 # Feature flag definitions
+│   │   └── flags.json
+│   ├── experiments/           # Experiment configurations
+│   │   └── experiments.json
+│   ├── templates/             # CP and spec templates
+│   │   ├── feature.template.md
+│   │   └── bugfix.template.md
+│   └── .gitignore            # Ignore local caches
+│
+├── gait-app/                  # Next.js application (can be separate repo)
+│   ├── app/                   # Next.js App Router
+│   │   ├── (dashboard)/      # Authenticated routes with sidebar
+│   │   │   ├── layout.tsx    # Dashboard layout with shadcn sidebar
+│   │   │   ├── page.tsx      # Home dashboard
+│   │   │   ├── proposals/    # CP management views
+│   │   │   ├── experiments/  # A/B testing interface
+│   │   │   ├── flags/        # Feature flag management
+│   │   │   ├── analytics/    # Metrics and insights
+│   │   │   └── settings/     # Configuration
+│   │   ├── api/              # REST API routes
+│   │   │   └── v1/           # Versioned endpoints
+│   │   └── layout.tsx        # Root layout
+│   ├── components/
+│   │   ├── ui/               # shadcn/ui components
+│   │   ├── features/         # Feature-specific components
+│   │   └── app-sidebar.tsx   # Main navigation
+│   ├── lib/
+│   │   ├── storage/          # Storage adapter implementation
+│   │   │   ├── adapter.ts    # Abstract interface
+│   │   │   ├── file.ts       # File-based implementation
+│   │   │   └── hybrid.ts     # v2: PostgreSQL + files
+│   │   ├── ai/               # AI service integration
+│   │   └── utils/            # Utilities
+│   └── package.json
+│
+└── your-actual-code/          # Your project files
+```
+
+***
+
+### Core Primitives
+
+#### 1. Change Proposal (CP) - v1 File Format
+
+Change Proposals are stored as markdown files with YAML frontmatter in `.gait/proposals/`:
+
+````markdown
+---
+# Required fields
+id: cp-2024-001
+version: "1.0"
+intent: Add TOTP Two-Factor Authentication
+createdAt: '2024-08-16T10:30:00Z'
+updatedAt: '2024-08-16T14:45:00Z'
+status: in-review        # draft | proposed | in-review | approved | merged | rejected
+priority: high           # low | medium | high | critical
+
+# Author information
+author:
+  id: sarah-chen
+  name: Sarah Chen
+  email: sarah@company.com
+  role: product-manager  # engineer | product-manager | designer | engineering-manager | agent
+  type: human           # human | agent
+
+# Product context (optional)
+productSpec:
+  ref: specs/auth/2fa-implementation
+  goals:
+    - Improve account security
+    - Reduce support tickets for compromised accounts
+  successMetrics:
+    - name: adoption_rate
+      target: "25% within 60 days"
+      type: business
+    - name: support_tickets
+      target: "50% reduction in account recovery"
+      type: business
+  platforms: [web, ios, android]
+
+# Implementation plan
+plan:
+  estimatedDuration: "2 weeks"
+  dependencies: []
+  steps:
+    - id: step-1
+      type: code
+      description: Implement TOTP secret generation and storage
+      assignee: alice@company.com
+      status: completed
+      evidence:
+        - type: test-results
+          data: "100% test coverage on auth module"
+    - id: step-2
+      type: code
+      description: Build QR code generation and scanning
+      status: in-progress
+      dependencies: [step-1]
+    - id: step-3
+      type: review
+      description: Security audit of implementation
+      status: pending
+      dependencies: [step-1, step-2]
+
+# Feature flags (optional)
+featureFlags:
+  - key: auth.totp.enabled
+    type: boolean
+    defaultValue: false
+    description: Enable TOTP authentication feature
+    rollout:
+      start: 0
+      target: 100
+      increment: 10
+      interval: daily
+
+# Experiments (optional)
+experiments:
+  - id: totp_onboarding_flow
+    name: TOTP Onboarding Flow Test
+    hypothesis: Inline setup increases adoption vs. settings page
+    variants: [inline, settings]
+    allocation: [50, 50]
+    primaryMetric: totp_setup_completion
+    status: draft
+
+# Governance
+policies:
+  - type: security-review
+    status: pending
+    reviewer: security-team
+  - type: code-review
+    status: approved
+    reviewer: alice@company.com
+    approvedAt: '2024-08-16T13:00:00Z'
+
+# AI interactions
+aiInteractions:
+  - id: ai-001
+    timestamp: '2024-08-16T11:00:00Z'
+    type: suggestion
+    model: claude-3-opus
+    prompt: "Review the security implications of this implementation"
+    accepted: true
+
+# Metadata
+tags: [security, authentication, 2fa]
+labels:
+  - name: breaking-change
+    color: red
+  - name: user-facing
+    color: blue
+
+# Comments (stored inline for v1)
+comments:
+  - id: comment-001
+    author: security-team
+    timestamp: '2024-08-16T12:00:00Z'
+    text: "Please ensure TOTP secrets are encrypted at rest"
+  - id: comment-002
+    author: mobile-team
+    timestamp: '2024-08-16T13:30:00Z'
+    text: "We'll need 2 sprints for the mobile implementation"
+---
+
+# Add TOTP Two-Factor Authentication
+
+## Problem Statement
+Our users are increasingly concerned about account security. We've seen a 15% increase in support tickets related to account breaches in Q3 2024. Industry standards now expect 2FA as a baseline security feature.
+
+## Proposed Solution
+Implement Time-based One-Time Password (TOTP) authentication as an optional security feature for all user accounts.
+
+### Key Features
+- **QR Code Setup**: Simple scanning flow for mobile authenticator apps
+- **Backup Codes**: 10 single-use recovery codes for account access
+- **Remember Device**: Optional 30-day trusted device cookies
+- **Graceful Degradation**: SMS fallback for users without authenticator apps
+
+## Implementation Details
+
+### Backend Changes
+```typescript
+// New auth service methods
+interface AuthService {
+  generateTOTPSecret(userId: string): TOTPSecret;
+  verifyTOTP(userId: string, token: string): boolean;
+  generateBackupCodes(userId: string): string[];
+}
+````
+
+#### Database Schema
+
+```sql
+ALTER TABLE users ADD COLUMN totp_secret VARCHAR(32);
+ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT FALSE;
+```
+
+### Testing Strategy
+
+* [ ] Unit tests for TOTP generation/validation
+* [ ] Integration tests for full auth flow
+* [ ] Security penetration testing
+* [ ] Load testing for 10k concurrent validations
+
+### Rollout Plan
+
+1. **Week 1**: Deploy to staging, internal testing
+2. **Week 2**: 1% rollout to beta users
+3. **Week 3**: 10% rollout, monitor metrics
+4. **Week 4**: 50% rollout if metrics are positive
+5. **Week 5**: 100% availability (still opt-in)
+
+### AI Assistant Notes
+
+*Last reviewed: 2024-08-16 14:45:00*
+
+The implementation plan looks solid. Consider these additional security measures:
+
+1. Rate limiting on TOTP attempts (max 5 per minute)
+2. Notification email when 2FA is disabled
+3. Require current password to enable/disable 2FA
+
+````
+
+### 2. Configuration File (.gait/config.json)
+
+```json
+{
+  "version": "1.0.0",
+  "mode": "git-sidecar",
+  "initialized": "2024-08-16T10:00:00Z",
+  
+  "repository": {
+    "type": "git",
+    "remote": "https://github.com/company/project.git",
+    "mainBranch": "main",
+    "syncStrategy": "manual"
+  },
+  
+  "ai": {
+    "enabled": true,
+    "provider": "anthropic",
+    "model": "claude-3-opus-20240229",
+    "prompts": {
+      "cpReview": "Review this change proposal for completeness, security, and best practices.",
+      "implementation": "Suggest implementation steps for this change.",
+      "explain": "Explain this technical change to a non-technical audience."
+    }
+  },
+  
+  "policies": {
+    "requireApproval": true,
+    "minReviewers": 1,
+    "autoMerge": false,
+    "codeOwners": [
+      {
+        "pattern": "src/auth/*",
+        "owners": ["security-team"],
+        "minApprovals": 2
+      }
+    ]
+  },
+  
+  "team": {
+    "members": [
+      {
+        "id": "sarah-chen",
+        "name": "Sarah Chen",
+        "email": "sarah@company.com",
+        "role": "product-manager"
+      }
+    ]
+  }
+}
+````
+
+#### 3. Feature Flags (.gait/flags/flags.json)
+
+```json
+{
+  "flags": [
+    {
+      "key": "auth.totp.enabled",
+      "name": "TOTP Authentication",
+      "description": "Enable TOTP two-factor authentication",
+      "type": "boolean",
+      "defaultValue": false,
+      "environments": {
+        "development": true,
+        "staging": true,
+        "production": false
+      },
+      "targeting": {
+        "rules": [
+          {
+            "audience": "beta_users",
+            "value": true
+          }
+        ]
+      },
+      "owner": "security-team",
+      "createdAt": "2024-08-16T10:00:00Z",
+      "updatedAt": "2024-08-16T10:00:00Z"
+    }
+  ]
+}
+```
+
+***
+
+### User Interface Components
+
+#### Web UI for v1 - File-Based Operations
+
+The web UI reads and writes directly to the `.gait/` directory using Next.js API routes:
+
+```typescript
+// app/api/v1/proposals/route.ts
+import { FileStorageAdapter } from '@/lib/storage/file';
+import { NextRequest, NextResponse } from 'next/server';
+
+const storage = new FileStorageAdapter();
+
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const status = searchParams.get('status');
+  const author = searchParams.get('author');
+  
+  const proposals = await storage.listCPs({
+    status: status as ProposalStatus,
+    author
+  });
+  
+  return NextResponse.json({ data: proposals });
+}
+
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  const cp = await storage.createCP(body);
+  return NextResponse.json(cp, { status: 201 });
+}
+```
+
+```typescript
+// components/features/proposal-list.tsx
+import { useQuery } from '@tanstack/react-query';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+
+export function ProposalList() {
+  const { data: proposals, isLoading } = useQuery({
+    queryKey: ['proposals'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/proposals');
+      return res.json();
+    },
+    // Poll for file system changes
+    refetchInterval: 5000
+  });
+  
+  if (isLoading) return <div>Loading proposals...</div>;
+  
+  return (
+    <div className="grid gap-4">
+      {proposals?.data.map((cp: ChangeProposal) => (
+        <Card key={cp.id} className="p-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="font-semibold">{cp.intent}</h3>
+              <p className="text-sm text-muted-foreground">
+                {cp.id} • {cp.author.name}
+              </p>
+            </div>
+            <Badge variant={getStatusVariant(cp.status)}>
+              {cp.status}
+            </Badge>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+```
+
+#### File System Watching for Real-time Updates
+
+```typescript
+// lib/storage/watcher.ts
+import { watch } from 'chokidar';
+import { EventEmitter } from 'events';
+
+export class FileWatcher extends EventEmitter {
+  private watcher: any;
+  
+  constructor(private basePath = '.gait') {
+    super();
+    this.initWatcher();
+  }
+  
+  private initWatcher() {
+    this.watcher = watch(`${this.basePath}/**/*.md`, {
+      persistent: true,
+      ignoreInitial: true
+    });
+    
+    this.watcher
+      .on('add', (path: string) => this.emit('cp:created', path))
+      .on('change', (path: string) => this.emit('cp:updated', path))
+      .on('unlink', (path: string) => this.emit('cp:deleted', path));
+  }
+}
+
+// Use in API route for Server-Sent Events
+// app/api/v1/proposals/stream/route.ts
+export async function GET() {
+  const encoder = new TextEncoder();
+  const watcher = new FileWatcher();
+  
+  const stream = new ReadableStream({
+    start(controller) {
+      watcher.on('cp:updated', (path) => {
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ type: 'update', path })}\n\n`)
+        );
+      });
+    }
+  });
+  
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
+}
+```
+
+#### shadcn/ui Sidebar Navigation (Same for v1 and v2)
+
+```typescript
+// components/app-sidebar.tsx
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
+} from "@/components/ui/sidebar"
+
+export function AppSidebar() {
+  return (
+    <Sidebar>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg">
+              <GitBranch className="size-6" />
+              <div className="flex flex-col gap-0.5">
+                <span className="font-semibold">GAIT</span>
+                <span className="text-xs text-muted-foreground">v1.0 - File-based</span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Main</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/">
+                    <Home />
+                    <span>Dashboard</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/proposals">
+                    <GitBranch />
+                    <span>Proposals</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <AIAssistantTrigger />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <UserMenu />
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
+```
+
+***
+
+### Command Line Interface
+
+#### Core Commands (v1 - File-based)
+
+```bash
+# Initialize GAIT in a repository (creates .gait/ directory)
+gait init [--template=basic|advanced]
+
+# Create a new Change Proposal (writes to .gait/proposals/)
+gait propose "Add TOTP 2FA" [--author=email] [--type=feature|bugfix|refactor]
+gait propose --interactive  # AI-assisted proposal creation
+
+# List and filter CPs (reads from .gait/proposals/)
+gait list [--status=draft|proposed|approved] [--author=name] [--json]
+gait search "authentication"  # Search through markdown files
+
+# Show CP details (reads .gait/proposals/cp-xxx.md)
+gait show cp-001 [--format=json|yaml|md]
+gait diff cp-001 cp-002  # Compare proposals
+
+# Review and approve (updates YAML frontmatter)
+gait review cp-001 [--ai-assist]
+gait approve cp-001 [--message="LGTM"]
+gait reject cp-001 [--reason="Needs security review"]
+
+# AI operations (results saved to frontmatter)
+gait ai review cp-001 [--focus=security|performance|ux]
+gait ai suggest "Implementation for OAuth integration"
+gait ai explain cp-001 --audience=non-technical
+
+# Feature flags (reads/writes .gait/flags/flags.json)
+gait flag create auth.totp.enabled --type=boolean --default=false
+gait flag set auth.totp.enabled --value=true
+
+# Experiments (reads/writes .gait/experiments/)
+gait experiment create "Checkout flow A/B test"
+gait experiment status exp-001
+
+# Git sync
+gait sync  # Commits .gait/ changes
+gait push  # Push to remote
+```
+
+***
+
+### API Design (v1 - File-based)
+
+#### RESTful Endpoints
+
+All v1 endpoints work directly with files in `.gait/`:
+
+```typescript
+// File-based operations
+GET    /api/v1/proposals              // List proposals (reads .gait/proposals/)
+POST   /api/v1/proposals              // Create proposal (writes .gait/proposals/cp-xxx.md)
+GET    /api/v1/proposals/:id          // Get proposal (reads specific file)
+PATCH  /api/v1/proposals/:id          // Update proposal (modifies file)
+DELETE /api/v1/proposals/:id          // Delete proposal (removes file)
+
+// Search (in-memory using Fuse.js)
+GET    /api/v1/search?q=term          // Search across all markdown files
+
+// AI Integration (results saved to files)
+POST   /api/v1/ai/review              // Review CP, save to frontmatter
+POST   /api/v1/ai/suggest             // Get suggestions
+
+// Feature Flags (reads/writes .gait/flags/flags.json)
+GET    /api/v1/flags                  // List all flags
+POST   /api/v1/flags                  // Create flag
+PATCH  /api/v1/flags/:key             // Update flag
+
+// Experiments (reads/writes .gait/experiments/)
+GET    /api/v1/experiments            // List experiments
+POST   /api/v1/experiments            // Create experiment
+
+// File watching for real-time updates
+GET    /api/v1/proposals/stream       // Server-sent events for file changes
+```
+
+***
+
+### Development & Deployment
+
+#### v1 Package Configuration (No Database)
+
+```json
+// package.json - v1 File-based
+{
+  "name": "gait",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    
+    "gait:init": "tsx scripts/init-gait.ts",
+    "gait:validate": "tsx scripts/validate-files.ts",
+    
+    "ui:add": "pnpm dlx shadcn-ui@latest add"
+  },
+  
+  "dependencies": {
+    // Next.js & React
+    "next": "^14.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    
+    // UI Components (shadcn/ui)
+    "@radix-ui/react-accordion": "^1.1.2",
+    "@radix-ui/react-avatar": "^1.0.4",
+    "@radix-ui/react-dialog": "^1.0.5",
+    "@radix-ui/react-dropdown-menu": "^2.0.6",
+    "@radix-ui/react-scroll-area": "^1.0.5",
+    "@radix-ui/react-sidebar": "^1.0.0",
+    "@radix-ui/react-tabs": "^1.0.4",
+    
+    // Styling
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "lucide-react": "^0.309.0",
+    "tailwind-merge": "^2.2.0",
+    
+    // File Operations (v1 Core)
+    "gray-matter": "^4.0.3",         // Parse YAML frontmatter
+    "chokidar": "^3.6.0",            // File watching
+    "fuse.js": "^7.0.0",             // Client-side search
+    "zod": "^3.22.4",                // Schema validation
+    "ajv": "^8.12.0",                // JSON schema validation
+    
+    // AI Integration
+    "ai": "^3.0.0",
+    "@anthropic-ai/sdk": "^0.20.0",
+    "openai": "^4.28.0",
+    
+    // Data fetching
+    "@tanstack/react-query": "^5.17.9",
+    
+    // Utilities
+    "date-fns": "^3.3.1",
+    "react-markdown": "^9.0.1",
+    "recharts": "^2.10.4",
+    
+    // CLI Dependencies
+    "commander": "^11.1.0",
+    "chalk": "^5.3.0",
+    "inquirer": "^9.2.12",
+    "ora": "^8.0.1"
+  },
+  
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.47",
+    "autoprefixer": "^10.4.17",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.1.0",
+    "postcss": "^8.4.33",
+    "prettier": "^3.2.4",
+    "tailwindcss": "^3.4.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.1"
+  }
+}
+```
+
+#### v2 Additional Dependencies (Future)
+
+```json
+// Additional dependencies for v2 (PostgreSQL enhancement)
+{
+  "dependencies": {
+    // ... all v1 dependencies plus:
+    
+    // Database (v2 only)
+    "@prisma/client": "^5.8.1",
+    "@t3-oss/env-nextjs": "^0.7.3",
+    
+    // API (v2 enhancement)
+    "@trpc/client": "^10.45.0",
+    "@trpc/next": "^10.45.0",
+    "@trpc/react-query": "^10.45.0",
+    "@trpc/server": "^10.45.0",
+    
+    // Real-time (v2 feature)
+    "pusher": "^5.2.0",
+    "pusher-js": "^8.4.0",
+    
+    // Background Jobs (v2 feature)
+    "bullmq": "^5.1.0"
+  },
+  
+  "devDependencies": {
+    // ... all v1 devDependencies plus:
+    "prisma": "^5.8.1"
+  },
+  
+  "scripts": {
+    // v2 additions:
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts"
+  }
+}
+```
+
+#### Dev Container Configuration (v1)
+
+```json
+// .devcontainer/devcontainer.json - v1 (no database)
+{
+  "name": "GAIT Development (v1 - File-based)",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.vscode-typescript-next",
+        "unifiedjs.vscode-mdx"
+      ],
+      "settings": {
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+      }
+    }
+  },
+  
+  "forwardPorts": [3000],
+  "postCreateCommand": "pnpm install && pnpm gait:init",
+  "remoteUser": "node"
+}
+```
+
+***
+
+### Migration & Adoption Strategy
+
+#### Phase 1: v1 MVP - File-based (Weeks 1-4)
+
+**Goal**: Launch quickly with zero infrastructure
+
+**Core Features:**
+
+* ✅ Next.js app with shadcn/ui
+* ✅ File-based storage in `.gait/` directory
+* ✅ Markdown files with YAML frontmatter
+* ✅ Basic CLI: init, propose, list, show
+* ✅ Web UI: View and create proposals
+* ✅ AI chat integration
+* ✅ Local search with Fuse.js
+* ✅ Git synchronization
+
+**What v1 Can Do:**
+
+* Single repository CP management
+* Full CRUD operations on proposals
+* AI-assisted reviews and suggestions
+* Feature flag definitions
+* Basic experiments tracking
+* Team collaboration via git
+
+**v1 Limitations (Addressed in v2):**
+
+* No cross-repository dashboard
+* Search performance degrades with 100+ CPs
+* No real-time collaboration (must refresh)
+* No advanced analytics
+* No background jobs
+
+#### Phase 2: v2 Enhancement - Hybrid Storage (Weeks 5-8)
+
+**Goal**: Add PostgreSQL for scale while keeping files as source of truth
+
+**New Capabilities:**
+
+* PostgreSQL indexing for fast queries
+* Cross-repository dashboards
+* Real-time updates via WebSockets
+* Advanced search and filtering
+* Analytics and metrics aggregation
+* Background job processing
+* Audit trails
+
+**Migration Path:**
+
+```typescript
+// Easy migration from v1 to v2
+// 1. Keep all existing files
+// 2. Add PostgreSQL
+// 3. Run indexing script
+await indexExistingFiles();
+
+// 4. Switch storage adapter
+const storage = process.env.USE_DB 
+  ? new HybridStorageAdapter()  // v2
+  : new FileStorageAdapter();     // v1
+
+// Files remain source of truth!
+```
+
+#### Phase 3: Enterprise Features (Weeks 9-12)
+
+**Goal**: Production-ready for large teams
+
+* SSO/SAML authentication
+* Role-based access control
+* Compliance reporting
+* Custom workflows
+* Advanced AI agents
+* Multi-region support
+
+***
+
+### Key Differentiators: v1 File-First Approach
+
+#### Why File-First Wins
+
+1. **Zero Infrastructure Barrier**
+   * No database to set up
+   * No migrations to run
+   * Works immediately after `git clone`
+
+2. **Git-Native by Design**
+   * Everything versions with your code
+   * Conflicts resolved through git
+   * Full history in version control
+   * Works offline
+
+3. **Progressive Enhancement**
+   * Start simple, add complexity when needed
+   * Files always remain source of truth
+   * Database becomes an optional index
+   * No data migration required
+
+4. **Developer Friendly**
+   * Edit proposals in your IDE
+   * Script against simple markdown files
+   * Use standard Unix tools (grep, sed, awk)
+   * Backup is just copying files
+
+#### Example: Working with v1 Files
+
+```bash
+# Find all high-priority proposals
+grep -l "priority: high" .gait/proposals/*.md
+
+# Count proposals by status
+grep "status:" .gait/proposals/*.md | cut -d: -f3 | sort | uniq -c
+
+# Quick edit in your editor
+vim .gait/proposals/cp-2024-001.md
+
+# See what changed
+git diff .gait/proposals/
+
+# Commit changes
+git add .gait/ && git commit -m "Updated CP status"
+```
+
+***
+
+### Security & Compliance (v1 Considerations)
+
+#### v1 Security Model
+
+* **File Permissions**: Rely on OS file permissions
+* **Git Access Control**: Use existing git repository permissions
+* **API Authentication**: NextAuth.js with local providers
+* **Secrets**: Environment variables only (no database credentials needed)
+
+#### v2 Security Enhancements
+
+* Database-level access control
+* Row-level security policies
+* Encrypted fields for sensitive data
+* Comprehensive audit logging
+
+***
+
+### Performance Characteristics
+
+#### v1 Performance Profile
+
+| Operation    | File Count | Performance        |
+| ------------ | ---------- | ------------------ |
+| List all CPs | 10         | \~10ms             |
+| List all CPs | 100        | \~100ms            |
+| List all CPs | 1000       | \~1s (needs v2)    |
+| Search       | 100        | \~50ms (in-memory) |
+| Create CP    | Any        | \~20ms             |
+| Update CP    | Any        | \~20ms             |
+
+#### When to Upgrade to v2
+
+* More than 100 active proposals
+* Need cross-repo visibility
+* Require real-time collaboration
+* Want advanced analytics
+* Need background processing
+
+***
+
+### Implementation Checklist for v1
+
+#### Week 1: Foundation
+
+* [ ] Initialize Next.js project with TypeScript
+* [ ] Set up shadcn/ui components
+* [ ] Create `.gait/` directory structure
+* [ ] Implement `FileStorageAdapter` class
+* [ ] Build proposal list view
+* [ ] Add proposal creation form
+
+#### Week 2: CLI & Core Features
+
+* [ ] Create CLI with Commander.js
+* [ ] Implement `gait init` command
+* [ ] Implement `gait propose` command
+* [ ] Add markdown parsing with gray-matter
+* [ ] Build proposal detail view
+* [ ] Add search with Fuse.js
+
+#### Week 3: AI & Collaboration
+
+* [ ] Integrate AI SDK (Anthropic/OpenAI)
+* [ ] Add AI chat panel
+* [ ] Implement review/approve commands
+* [ ] Add comment system (in frontmatter)
+* [ ] Build settings page
+* [ ] Add file watching for auto-refresh
+
+#### Week 4: Polish & Testing
+
+* [ ] Add feature flags management
+* [ ] Create experiment tracking
+* [ ] Write documentation
+* [ ] Add tests for storage adapter
+* [ ] Create example templates
+* [ ] Deploy v1 MVP
+
+***
+
+### Example v1 Implementation Files
+
+#### Storage Adapter Implementation
+
+```typescript
+// lib/storage/file.ts
+import fs from 'fs/promises';
+import path from 'path';
+import matter from 'gray-matter';
+import { z } from 'zod';
+import Fuse from 'fuse.js';
+
+export class FileStorageAdapter implements StorageAdapter {
+  private basePath: string;
+  
+  constructor(basePath = '.gait') {
+    this.basePath = basePath;
+  }
+  
+  async ensureDirectories() {
+    const dirs = ['proposals', 'specs', 'flags', 'experiments', 'templates'];
+    for (const dir of dirs) {
+      await fs.mkdir(path.join(this.basePath, dir), { recursive: true });
+    }
+  }
+  
+  async createCP(cp: ChangeProposal): Promise<void> {
+    await this.ensureDirectories();
+    
+    const { content, ...frontmatter } = cp;
+    const markdown = matter.stringify(content || '', frontmatter);
+    const filePath = path.join(this.basePath, 'proposals', `${cp.id}.md`);
+    
+    await fs.writeFile(filePath, markdown, 'utf-8');
+  }
+  
+  async getCP(id: string): Promise<ChangeProposal | null> {
+    try {
+      const filePath = path.join(this.basePath, 'proposals', `${id}.md`);
+      const fileContent = await fs.readFile(filePath, 'utf-8');
+      const { data, content } = matter(fileContent);
+      
+      return {
+        ...data,
+        content
+      } as ChangeProposal;
+    } catch (error) {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    }
+  }
+  
+  async listCPs(filter?: CPFilter): Promise<ChangeProposal[]> {
+    const proposalsDir = path.join(this.basePath, 'proposals');
+    
+    try {
+      const files = await fs.readdir(proposalsDir);
+      const proposals = await Promise.all(
+        files
+          .filter(f => f.endsWith('.md'))
+          .map(async (file) => {
+            const content = await fs.readFile(
+              path.join(proposalsDir, file), 
+              'utf-8'
+            );
+            const { data, content: body } = matter(content);
+            return { ...data, content: body } as ChangeProposal;
+          })
+      );
+      
+      // Apply filters
+      return proposals.filter(cp => {
+        if (filter?.status && cp.status !== filter.status) return false;
+        if (filter?.author && cp.author.id !== filter.author) return false;
+        if (filter?.priority && cp.priority !== filter.priority) return false;
+        return true;
+      });
+    } catch (error) {
+      if (error.code === 'ENOENT') return [];
+      throw error;
+    }
+  }
+  
+  async searchCPs(query: string): Promise<ChangeProposal[]> {
+    const allCPs = await this.listCPs();
+    
+    const fuse = new Fuse(allCPs, {
+      keys: [
+        { name: 'intent', weight: 2 },
+        { name: 'content', weight: 1 },
+        { name: 'author.name', weight: 0.5 },
+        { name: 'tags', weight: 1 }
+      ],
+      threshold: 0.3,
+      includeScore: true
+    });
+    
+    return fuse.search(query).map(result => result.item);
+  }
+  
+  async updateCP(id: string, updates: Partial<ChangeProposal>): Promise<void> {
+    const existing = await this.getCP(id);
+    if (!existing) throw new Error(`CP ${id} not found`);
+    
+    const updated = {
+      ...existing,
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+    
+    await this.createCP(updated);
+  }
+}
+```
+
+***
+
+### Conclusion
+
+GAIT v2.1 specification embraces a **file-first architecture** that eliminates infrastructure barriers while maintaining a clear path to scale. By storing everything in `.gait/` directories as markdown files with YAML frontmatter, teams can adopt GAIT immediately without any database setup.
+
+#### v1 Benefits (Shipping Now)
+
+* **Zero infrastructure** - Just files in a directory
+* **Git-native** - Everything versions with your code
+* **Immediate value** - Start using in minutes
+* **Full functionality** - AI, proposals, flags, experiments all work
+* **Simple deployment** - Just a Next.js app
+
+#### v2 Future (When You Need It)
+
+* **Optional PostgreSQL** for performance at scale
+* **Files remain source of truth** - Database is just an index
+* **Seamless migration** - No data conversion needed
+* **Enterprise features** - Cross-repo dashboards, real-time, analytics
+
+This approach ensures teams can start using GAIT today while preserving the option to scale tomorrow, making it truly revolutionary for modern, AI-assisted development workflows.
+
+***
+
+*Version 2.1 - File-First Architecture*\
+*Updated: August 2025*\
+*Philosophy: Start simple, scale gracefully*
+
+
+## Agents & Registry
+
+* multiple places / types
+
+
+## API Reference
+
+Complete reference for all Coconut API endpoints. All endpoints follow RESTful conventions and return JSON responses with consistent error handling.
+
+### Base URL
+
+* **Development**: `http://localhost:3001`
+* **Production**: Your deployed instance URL
+
+### Authentication
+
+Currently, no authentication is required for API endpoints. Future versions will include API key authentication.
+
+### Response Format
+
+All endpoints return responses in the following format:
+
+```json
+{
+  "success": true,
+  "data": { /* Response data */ },
+  "error": { /* Error details if success: false */ }
+}
+```
+
+### Error Handling
+
+When errors occur, endpoints return appropriate HTTP status codes with error details:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message"
+  }
+}
+```
+
+### Endpoints
+
+#### Proposals API
+
+Manage change proposals stored as markdown files in `.gait/proposals/`.
+
+##### List Proposals
+
+```http
+GET /api/v1/proposals
+```
+
+**Query Parameters:**
+
+* `status` (string, optional): Filter by status (`draft`, `proposed`, `in-review`, `approved`, `merged`, `rejected`)
+* `author` (string, optional): Filter by author ID
+* `priority` (string, optional): Filter by priority (`low`, `medium`, `high`, `critical`)
+* `tags` (string, optional): Comma-separated list of tags to filter by
+* `q` (string, optional): Search query for fuzzy search across proposal content
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "cp-1234567890",
+      "intent": "Add dark mode support",
+      "status": "draft",
+      "author": {
+        "id": "user123",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "role": "engineer",
+        "type": "human"
+      },
+      "metadata": {
+        "createdAt": "2024-08-16T10:30:00Z",
+        "updatedAt": "2024-08-16T14:45:00Z",
+        "tags": ["ui", "theme"],
+        "priority": "medium"
+      }
+    }
+  ]
+}
+```
+
+##### Create Proposal
+
+```http
+POST /api/v1/proposals
+```
+
+**Request Body:**
+
+```json
+{
+  "intent": "Brief description of the change",
+  "content": "Detailed markdown content",
+  "author": {
+    "id": "user123",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "engineer",
+    "type": "human"
+  },
+  "status": "draft",
+  "metadata": {
+    "tags": ["ui", "feature"],
+    "priority": "high"
+  }
+}
+```
+
+**Response:** Returns the created proposal with generated ID and timestamps.
+
+##### Get Proposal
+
+```http
+GET /api/v1/proposals/:id
+```
+
+**Response:** Returns the complete proposal object including full content and metadata.
+
+##### Update Proposal
+
+```http
+PATCH /api/v1/proposals/:id
+```
+
+**Request Body:** Partial proposal object with fields to update.
+
+**Response:** Returns the updated proposal object.
+
+##### Delete Proposal
+
+```http
+DELETE /api/v1/proposals/:id
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Proposal cp-1234567890 deleted successfully"
+}
+```
+
+#### Agents API
+
+Manage AI agents stored as markdown files in `.gait/agents/`.
+
+##### List Agents
+
+```http
+GET /api/v1/agents
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "documents": [
+    {
+      "filename": "code-reviewer.md",
+      "title": "Code Reviewer",
+      "metadata": {
+        "name": "Code Reviewer",
+        "description": "Reviews code for best practices",
+        "color": "blue",
+        "tools": "code-analysis"
+      },
+      "content": "# Code Reviewer Agent\n\nThis agent..."
+    }
+  ]
+}
+```
+
+##### Create Agent
+
+```http
+POST /api/v1/agents
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "My Agent",
+  "description": "Agent description",
+  "content": "Agent system prompt and instructions",
+  "metadata": {
+    "color": "green",
+    "tools": "file-operations"
+  }
+}
+```
+
+##### Get Agent
+
+```http
+GET /api/v1/agents/:id
+```
+
+##### Update Agent
+
+```http
+PUT /api/v1/agents/:id
+```
+
+##### Delete Agent
+
+```http
+DELETE /api/v1/agents/:id
+```
+
+#### Resources API
+
+Manage uploaded files and resources in `.gait/resources/`.
+
+##### List Resources
+
+```http
+GET /api/v1/resources
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "res-1234567890-abc123",
+      "name": "screenshot.png",
+      "type": "image/png",
+      "size": 102400,
+      "uploadedAt": "2024-08-16T10:30:00Z",
+      "metadata": {
+        "tags": ["ui", "mockup"],
+        "description": "Login page mockup"
+      },
+      "path": "res-1234567890-abc123.png",
+      "thumbnailPath": "res-1234567890-abc123_thumb.jpg"
+    }
+  ]
+}
+```
+
+##### Upload Resource
+
+```http
+POST /api/v1/resources
+```
+
+**Content-Type:** `multipart/form-data`
+
+**Form Fields:**
+
+* `file` (file): The file to upload
+* `tags` (string, optional): Comma-separated list of tags
+* `description` (string, optional): Resource description
+
+**Response:** Returns the created resource metadata.
+
+##### Get Resource
+
+```http
+GET /api/v1/resources/:id
+```
+
+##### Download Resource
+
+```http
+GET /api/v1/resources/:id?download=true
+```
+
+##### Get Thumbnail
+
+```http
+GET /api/v1/resources/:id/thumbnail
+```
+
+##### Update Resource
+
+```http
+PUT /api/v1/resources/:id
+```
+
+##### Delete Resource
+
+```http
+DELETE /api/v1/resources/:id
+```
+
+#### Knowledge Management API
+
+Manage knowledge documents in `.gait/context/knowledge/`.
+
+##### List Knowledge Documents
+
+```http
+GET /api/v1/context/knowledge
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "documents": [
+    {
+      "filename": "api-patterns.md",
+      "title": "API Design Patterns",
+      "metadata": {
+        "version": "1.0",
+        "updated": "2024-08-16",
+        "type": "knowledge",
+        "category": "api-patterns",
+        "tags": ["rest", "authentication"],
+        "sources": ["https://example.com/guide"]
+      },
+      "content": "# API Design Patterns\n\n..."
+    }
+  ]
+}
+```
+
+##### Create Knowledge Document
+
+```http
+POST /api/v1/context/knowledge
+```
+
+**Request Body:**
+
+```json
+{
+  "title": "Document Title",
+  "content": "# Document Title\n\nContent goes here...",
+  "metadata": {
+    "category": "best-practices",
+    "tags": ["coding", "standards"],
+    "sources": ["Internal Documentation"]
+  }
+}
+```
+
+##### Get Knowledge Document
+
+```http
+GET /api/v1/context/knowledge/:filename
+```
+
+##### Update Knowledge Document
+
+```http
+PUT /api/v1/context/knowledge/:filename
+```
+
+##### Delete Knowledge Document
+
+```http
+DELETE /api/v1/context/knowledge/:filename
+```
+
+#### Terminal API
+
+Manage terminal sessions with WebSocket support.
+
+##### Get Terminal Sessions
+
+```http
+GET /api/v1/terminal/sessions
+```
+
+**Query Parameters:**
+
+* `proposalId` (string, optional): Filter sessions by proposal ID
+
+**Response:**
+
+```json
+{
+  "sessions": [
+    {
+      "id": "cp-123-1234567890-abc",
+      "proposalId": "cp-123",
+      "createdAt": "2024-08-16T10:30:00Z",
+      "lastActivity": "2024-08-16T10:35:00Z",
+      "connected": true
+    }
+  ]
+}
+```
+
+##### Create Terminal Session
+
+```http
+POST /api/v1/terminal/:proposalId/create
+```
+
+**Request Body (Optional):**
+
+```json
+{
+  "enableLogging": true,
+  "startupCommand": "cd /path/to/project && npm install"
+}
+```
+
+**Response:**
+
+```json
+{
+  "sessionId": "cp-123-1234567890-abc",
+  "proposalId": "cp-123",
+  "createdAt": "2024-08-16T10:30:00Z"
+}
+```
+
+##### Destroy Terminal Session
+
+```http
+POST /api/v1/terminal/:proposalId/destroy
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Terminal session destroyed"
+}
+```
+
+##### Resize Terminal
+
+```http
+POST /api/v1/terminal/:proposalId/resize
+```
+
+**Request Body:**
+
+```json
+{
+  "cols": 80,
+  "rows": 24
+}
+```
+
+##### Terminal WebSocket
+
+```
+WS /api/v1/terminal/ws
+```
+
+Provides real-time terminal I/O communication.
+
+#### AI Integration API
+
+Interface with AI models for assistance and automation.
+
+##### AI Chat
+
+```http
+POST /api/v1/ai
+```
+
+**Request Body:**
+
+```json
+{
+  "message": "Your question or request",
+  "history": [
+    {
+      "role": "user",
+      "content": "Previous message"
+    },
+    {
+      "role": "assistant", 
+      "content": "Previous response"
+    }
+  ],
+  "model": "anthropic/claude-sonnet-4",
+  "context": "proposals",
+  "contextContent": "Additional context data",
+  "agentPersona": "You are a code review expert...",
+  "maxTokens": 2000,
+  "enableTools": true
+}
+```
+
+**Response:**
+
+```json
+{
+  "response": "AI generated response",
+  "toolCalls": [
+    {
+      "id": "call_123",
+      "function": {
+        "name": "change_proposals",
+        "arguments": "{\"operation\": \"list\"}"
+      }
+    }
+  ],
+  "toolResults": [
+    {
+      "tool_call_id": "call_123",
+      "content": "{\"success\": true, \"data\": [...]}"
+    }
+  ]
+}
+```
+
+#### Chat History API
+
+Manage conversation history stored in `.gait/chats/`.
+
+##### List Chats
+
+```http
+GET /api/v1/chats
+```
+
+**Response:**
+
+```json
+{
+  "chats": [
+    {
+      "id": "chat-1234567890-abc123",
+      "title": "How to implement dark mode?",
+      "messages": [
+        {
+          "role": "user",
+          "content": "How do I add dark mode?",
+          "timestamp": "2024-08-16T10:30:00Z"
+        }
+      ],
+      "model": "anthropic/claude-sonnet-4",
+      "context": {
+        "type": "proposals",
+        "content": "...",
+        "displayId": "cp-123"
+      },
+      "createdAt": "2024-08-16T10:30:00Z",
+      "updatedAt": "2024-08-16T10:35:00Z"
+    }
+  ]
+}
+```
+
+##### Create Chat
+
+```http
+POST /api/v1/chats
+```
+
+**Request Body:**
+
+```json
+{
+  "title": "Chat Title",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Your message",
+      "timestamp": "2024-08-16T10:30:00Z"
+    }
+  ],
+  "model": "anthropic/claude-sonnet-4",
+  "context": {
+    "type": "proposals",
+    "content": "context data"
+  }
+}
+```
+
+##### Get Chat
+
+```http
+GET /api/v1/chats/:id
+```
+
+##### Update Chat
+
+```http
+PUT /api/v1/chats/:id
+```
+
+##### Delete Chat
+
+```http
+DELETE /api/v1/chats/:id
+```
+
+#### Configuration API
+
+Access GAIT configuration from `.gait/config.json`.
+
+##### Get Configuration
+
+```http
+GET /api/v1/config
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "version": "1.0",
+    "features": {
+      "ai": true,
+      "terminal": true
+    }
+  }
+}
+```
+
+#### MCP (Model Context Protocol) API
+
+Interface with MCP servers and execute tools.
+
+##### List MCP Servers
+
+```http
+GET /api/v1/mcp
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "servers": ["filesystem", "web"],
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-filesystem"]
+    }
+  },
+  "tools": {
+    "proposals": {
+      "name": "change_proposals",
+      "description": "Manage change proposals"
+    },
+    "listProposals": {
+      "name": "list_proposals", 
+      "description": "List change proposals"
+    }
+  }
+}
+```
+
+##### Execute Tool
+
+```http
+POST /api/v1/mcp/execute
+```
+
+**Request Body:**
+
+```json
+{
+  "tool": "change_proposals",
+  "arguments": {
+    "operation": "list",
+    "filters": {
+      "status": "draft"
+    }
+  }
+}
+```
+
+#### Context APIs
+
+Access project architecture and context files.
+
+##### Get Architecture
+
+```http
+GET /api/v1/context/architecture
+```
+
+Returns the content of `.gait/context/architecture.md`.
+
+##### Get Project Context
+
+```http
+GET /api/v1/context/project
+```
+
+Returns the content of `.gait/context/project.md`.
+
+#### User Settings API
+
+Manage user preferences and settings.
+
+##### Get User Settings
+
+```http
+GET /api/v1/user/settings
+```
+
+##### Update User Settings
+
+```http
+PUT /api/v1/user/settings
+```
+
+##### Get User Info
+
+```http
+GET /api/v1/user
+```
+
+### Rate Limits
+
+Currently no rate limits are enforced. This may change in future versions.
+
+### Versioning
+
+The API uses semantic versioning. The current version is `v1`. Breaking changes will increment the major version number.
+
+### SDK Support
+
+TypeScript SDK is available in the `@lovelybunch/types` package for type-safe API interactions.
+
+
+## CLI (aka `nut`)
+
+### Initialize a new Coconut
+
+From the root of your project where you want to setup your `.nut`.
+
+```bash
+nut init
+```
+
+### Change Proposals
+
+```bash
+nut list
+nut propose "Add user authentication feature"
+```
+
+#### Web Interface
+
+```bash
+nut serve
+```
+
+On a remote server or devcontainer you can start with the following to make it accessible remotely:
+
+```bash
+nut serve --port=3002 --host=0.0.0.0
+```
+
+### Help
+
+```bash
+nut --help
+```
+
+
+## Contributing
+
+* Testing / Building CLI
+* Testing / Building Web UI
+* Testing / Building API
+
+***
+
+### Development & Version Management
+
+#### Local Development
+
+For local development with hot reload across all packages:
+
+```bash
+# Start all packages in watch mode
+pnpm run dev
+
+# Or start individual packages
+cd packages/api && pnpm run dev      # API server with tsx watch
+cd packages/frontend && pnpm run dev # Frontend with Vite HMR
+cd packages/cli && pnpm run dev      # CLI with TypeScript watch
+```
+
+#### Version Bumping
+
+The project includes automated scripts for version management:
+
+```bash
+# Bump patch version (1.0.12 → 1.0.13)
+pnpm run version:bump:patch
+
+# Bump minor version (1.0.12 → 1.1.0)
+pnpm run version:bump:minor
+
+# Bump major version (1.0.12 → 2.0.0)
+pnpm run version:bump:major
+
+# Or specify type manually
+pnpm run version:bump minor
+```
+
+**What the version bump script does:**
+
+* Updates all package versions in dependency order
+* Updates cross-package dependencies automatically
+* Maintains proper version relationships between packages
+* Updates root package.json version
+
+#### Publishing Packages
+
+After bumping versions, publish all packages to npm:
+
+```bash
+# Build and publish all packages in correct order
+pnpm run publish:all
+
+# Or do everything in one command
+pnpm run release  # Bumps patch version + publishes
+```
+
+**Publishing order (dependencies first):**
+
+1. `@lovelybunch/types` - Shared TypeScript types
+2. `@lovelybunch/core` - Core business logic
+3. `@lovelybunch/api` - Hono API server + bundled frontend
+4. `@lovelybunch/cli` - Command-line interface
+5. `coconuts` - Global CLI wrapper
+
+**What the publish script does:**
+
+* Builds all packages with `turbo build`
+* Bundles frontend with API package
+* Publishes packages in dependency order
+* Provides clear success/failure feedback
+
+#### Release Workflow
+
+Complete release process:
+
+```bash
+# 1. Bump versions (patch by default)
+pnpm run version:bump:patch
+
+# 2. Review changes
+git diff
+
+# 3. Build and publish
+pnpm run publish:all
+
+# 4. Commit changes
+git add .
+git commit -m "chore: bump versions to patch"
+
+# 5. Create git tag (optional)
+git tag v1.0.13
+git push origin main --tags
+```
+
+#### Package Structure
+
+```
+packages/
+├── types/          # Shared TypeScript types
+├── core/           # Core business logic & storage
+├── api/            # Hono API server + bundled frontend
+├── cli/            # Command-line interface
+├── frontend/       # React frontend (bundled into API)
+└── coconuts/       # Global CLI wrapper (nut command)
+```
+
+**Note:** The `frontend` package is not published separately as it's bundled into the `api` package for distribution.
+
+
+## Devcontainer Setup
+
+### Overview
+
+[Devcontainers](https://containers.dev) are a feature of VS Code, Cursor, and other supported IDEs that enable you to create a consistent and secure development environment using containers. They run in an isolated environment, making them particularly well-suited for coding agents and AI-powered development tools such as [Claude Code](https://www.anthropic.com/claude-code), Google [Gemini CLI](https://cloud.google.com/gemini/docs/codeassist/gemini-cli), or OpenAI's [Codex](https://github.com/openai/codex).
+
+The key advantage of this approach is that you can run development tools in complete isolation with elevated permissions (using flags like YOLO modes like Claude Code's [--dangerously-skip-permissions](https://docs.anthropic.com/en/docs/claude-code/cli-reference)) without compromising your host system's security.
+
+### Devcontainer CLI install
+
+```
+npm install -g @devcontainers/cli
+```
+
+### Devcontainer Setup
+
+:::info
+Make sure you are inside your project folder.
+:::
+
+Download the Coconut devcontainer:
+
+```
+curl -fsSL https://raw.githubusercontent.com/lovelybunch/coconut-init/main/.devcontainer/setup-in-project.sh | bash
+```
+
+Build the underlying container:
+
+```
+devcontainer build --workspace-folder .
+```
+
+Start the devcontainer:
+
+```
+devcontainer up --workspace-folder .
+```
+
+List all devcontainers:
+
+```
+docker ps --filter "label=devcontainer.local_folder"
+```
+
+Remmove all devcontainers (remember the code is outside the containers so won't be lost):
+
+```
+docker ps -aq --filter "label=devcontainer.local_folder" | xargs docker rm -f
+```
+
+### Rebuilding Container
+
+```
+devcontainer build --workspace-folder .
+docker ps --filter "label=devcontainer.local_folder"
+docker rm -f <container-name>
+devcontainer up --workspace-folder
+docker exec -it <container-name> bash
+```
+
+### Long running `nut serve` from devcontainer
+
+Connect into the container via the above (if it's already running you'll need the containers name and the last step to connect) and then run the following on the correct port. This will start the coconut service in the background.
+
+```
+nohup nut serve --host=0.0.0.0 --port=3020 > /tmp/nut.log 2>&1 & disown
+```
+
+Note it can be built without cache (`devcontainer build --workspace-folder . --no-cache`).
+
+
+import { HomePage } from 'vocs/components'
+
+<HomePage.Root>
+  <HomePage.Logo />
+
+  <HomePage.Tagline>My Awesome Docs</HomePage.Tagline>
+
+  <HomePage.InstallPackage name="vocs" type="init" />
+
+  <HomePage.Description>This is a description of my documentation website.</HomePage.Description>
+
+  <HomePage.Buttons>
+    <HomePage.Button href="/getting-started" variant="accent">Get started</HomePage.Button>
+    <HomePage.Button href="https://github.com/wevm/vocs">GitHub</HomePage.Button>
+  </HomePage.Buttons>
+</HomePage.Root>
+
+
+## Getting started
+
+### Dependencies
+
+* Node.js 18+
+* node-pty
+
+### Installation
+
+```bash
+npm install -g coconuts
+```
+
+From the root of your project where you want to setup your `.nut`.
+
+```bash
+nut init
+```
+
+Start the web interface.
+
+```bash
+nut serve
+```
+
+And you should now see the following:
+
+![Coconut Web UI](./images/screenshot.png)
+
+
+## LLM Setup
+
+### API Key Configuration
+
+Coconut includes an AIAssistant that requires API keys from supported providers. Configure them globally after installation:
+
+#### Interactive Setup (Recommended)
+
+```bash
+nut config set-key --interactive
+```
+
+This will guide you through:
+
+* Selecting an API provider (OpenRouter, Anthropic, OpenAI, or Google Gemini)
+* Entering your API key with format validation
+* Providing setup instructions and URLs
+
+#### Direct Setup
+
+```bash
+# OpenRouter (recommended - access to multiple models)
+nut config set-key -p openrouter -k sk-or-v1-your-key-here
+
+# Or use specific providers
+nut config set-key -p anthropic -k sk-ant-your-key-here
+nut config set-key -p openai -k sk-your-key-here
+nut config set-key -p gemini -k AI-your-key-here
+```
+
+#### Getting API Keys
+
+```bash
+# Show setup guide for all providers
+nut config setup
+
+# Show setup guide for specific provider
+nut config setup -p openrouter
+```
+
+**Supported Providers:**
+
+* **OpenRouter** - Access multiple AI models through one API ([Get key](https://openrouter.ai/keys))
+* **Anthropic** - Direct Claude access ([Get key](https://console.anthropic.com/))
+* **OpenAI** - Direct GPT access ([Get key](https://platform.openai.com/api-keys))
+* **Google Gemini** - Direct Gemini access ([Get key](https://makersuite.google.com/app/apikey))
+
+#### Managing API Keys
+
+```bash
+# List configured keys (masked for security)
+nut config list-keys
+
+# View full configuration
+nut config show
+
+# Remove a key
+nut config remove-key openrouter
+
+# Set default model
+nut config set-default model anthropic/claude-sonnet-4
+```
+
+**Config Location:**
+
+* macOS: `~/Library/Application Support/coconuts/config.json`
+* Linux: `~/.config/coconuts/config.json`
+* Windows: `%APPDATA%/coconuts/config.json`
+
+
+## Models
+
+### AI Assistant
+
+* ChatGPT 4o
+* Claude Sonnet / Opus
+* Gemini Pro
+
+### Coding Agents
+
+:::info
+Note that at the time of writing with Google's Gemini CLI you get 60 request per minute / 1000 request for free per today
+:::
+
+* [Claude Code](https://www.anthropic.com/claude-code)
+* [Gemini CLI](https://cloud.google.com/gemini/docs/codeassist/gemini-cli)
+* [OpenAI Codex](https://openai.com/codex/)
+
+
+## Symlinks
+
+Symlinks allow you to present paths from your project's `.nut` to other areas of either the project or filesystem to allow them to be picked up by IDEs or coding agents.
+
+{/* Test trigger for docs deployment - lockfile fix */}
+
+### Examples
+
+#### Claude Commands
+
+Link Path:
+
+```bash
+~/.claude/commands
+```
+
+Target Path:
+
+```bash
+~/path-to-your-project/.nut/commands
+```
+
+#### Claude Agents
+
+TBD
+
+#### Cursor Rules
+
+Link Path:
+
+```bash
+~/path-to-your-project/AGENTS.md
+```
+
+Target Path:
+
+```bash
+~/path-to-your-project/.nut/context/architecture.md
+```
+
+...
+
+NOTES
+
+* Also [https://docs.cursor.com/en/context/rules](https://docs.cursor.com/en/context/rules)
+* Wired up to `.cursor/rules` or an `AGENTS.md` in project root (although this is just a single file)
+* TODO - Cursor uses `.mdc`
+
+### Testing Notes
+
+```
+curl -X GET http://localhost:3001/api/v1/symlinks
+```
+
+```
+curl -X POST http://localhost:3001/api/v1/symlinks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "New Symlink Configuration",
+    "description": "Test symlink from ~/.claude/commands to .nut/commands",
+    "linkPath": "~/.claude/commands",
+    "targetPath": "/Users/bluer/Developer/coconut/.nut/commands",
+    "isActive": false
+  }'
+```
+
+
+## v1.0.47
+
+### Features
+
+* Adds feature template to new proposal page
+* Adds initial Coconut documentation
+* Devcontainer setup improvements
+* Experimental support for MCP servers in AI Advisor
+* Ability to configure coding MCP server(s) under settings
+
+### Fixes
+
+* Resolves missing MCP configuration file after `nut init`
+
+
+## v1.0.48
+
+### Features
+
+* ...
+
+### Fixes
+
+* Fix within the AI Advisor to pull OpenRouter API key from config
+* Fixes symlink creation and removal under Settings | Rules
+* Renames .gait directory to .nut
+
