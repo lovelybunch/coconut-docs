@@ -2400,6 +2400,102 @@ nut config set-default model anthropic/claude-sonnet-4
 * Windows: `%APPDATA%/coconuts/config.json`
 
 
+## MCP Tools
+
+The AI Assistant can call MCP tools during a chat to perform actions such as listing and creating Change Proposals. This page summarizes what’s available and how to use it.
+
+### Endpoints
+
+* `GET /api/v1/mcp` — Lists available tools and configured external MCP servers.
+* `GET /api/v1/mcp/schema` — Returns JSON Schemas for built‑in tools (`change_proposals`, `list_proposals`).
+* `POST /api/v1/mcp/execute` — Executes a tool call with shape `{ tool, arguments }`.
+
+These routes are served by the API package. The AI route (`POST /api/v1/ai`) can enable tools; when the model returns tool\_calls, the server executes them and then asks the model for a final message with tool results included.
+
+### Tools
+
+#### list\_proposals
+
+List proposals (metadata only). Accepts optional filters.
+
+Arguments shape:
+
+```
+{
+  filters?: {
+    status?: 'draft' | 'proposed' | 'in-review' | 'code-complete' | 'approved' | 'merged' | 'rejected',
+    priority?: 'low' | 'medium' | 'high' | 'critical',
+    tags?: string[],
+    search?: string
+  }
+}
+```
+
+#### change\_proposals
+
+Manage proposals: `list | get | create | update | delete`.
+
+Common arguments:
+
+```
+{
+  operation: 'list' | 'get' | 'create' | 'update' | 'delete',
+  id?: string,
+  filters?: { ... },
+  proposal?: { ... } // for create/update
+}
+```
+
+Proposal payload (create/update):
+
+```
+{
+  intent: string,            // required
+  content: string,           // required (markdown OK)
+  author?: {
+    id?: string,
+    name?: string,
+    email?: string,
+    role?: string,
+    type?: 'human' | 'agent'
+  },
+  planSteps?: Array<
+    | string
+    | {
+        id?: string,
+        description: string,
+        status?: 'pending' | 'in-progress' | 'completed' | 'failed',
+        command?: string,
+        expectedOutcome?: string
+      }
+  >,
+  metadata?: {
+    tags?: string[],
+    priority?: 'low' | 'medium' | 'high' | 'critical',
+    reviewers?: string[]
+  },
+  releasePlan?: {
+    strategy: 'immediate' | 'gradual' | 'scheduled' | 'gated'
+  },
+  status?: 'draft' | 'proposed' | 'in-review' | 'code-complete' | 'approved' | 'merged' | 'rejected',
+  productSpecRef?: string
+}
+```
+
+Notes:
+
+* The server normalizes `planSteps` so strings become actionable steps; dates may be ISO strings and are normalized.
+* Undefined values are stripped before YAML frontmatter is written.
+
+### Using in the AI Assistant
+
+1. Open the sidebar and select a model that supports tools.
+2. Enable “MCP Tools (experimental)” and choose tools as needed.
+3. Ask the assistant to “create a change proposal …” and it may call `change_proposals(create)` using the schema above.
+
+If you want deterministic results, construct the exact `proposal` payload per the schema and ask the assistant to call the tool with those arguments.
+
+
 ## Models
 
 ### AI Assistant
@@ -2486,7 +2582,7 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 ```
 
 
-## v1.0.47
+## v1.0.47 - Tropical Moonbars
 
 ### Features
 
@@ -2501,15 +2597,56 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 * Resolves missing MCP configuration file after `nut init`
 
 
-## v1.0.48
-
-### Features
-
-* ...
+## v1.0.48 - Island Glow Macarons
 
 ### Fixes
 
+* Terminals now remember and show recent output after a page refresh,
+  with improved text display reliability
 * Fix within the AI Advisor to pull OpenRouter API key from config
 * Fixes symlink creation and removal under Settings | Rules
-* Renames .gait directory to .nut
+* Renames `.gait` directory to `.nut`
+* Tweaks output when running `nut serve`
+
+
+## v1.0.50 - Island Glow Macarons
+
+### Features
+
+* Full screen view for AI Assistant
+* New Code page improves the coding agent UX
+* Ability to run jobs from the terminal screen
+
+### Fixes
+
+* MCP servers now working in AI Assistant
+* Reducing bundle size
+* Increase real estate on chat window by putting dynamic helpers under dropdown (under "Quick prompts")
+
+
+## v1.0.51 - Island Glow Macarons
+
+### Features
+
+* Adds preview to terminal and code screens
+
+### Fixes
+
+* Resolves issue with the built-in MCP servers when creating proposals
+
+
+## v1.0.52 - Glistening Ocean Macarons
+
+### Features
+
+* Ability to add / edit implementation plan details associated with a proposal
+* Coding agents now update the assigned change proposal with implementation steps, comments (with suggested future updates), and status upon completion
+* Adds a "code complete" status
+* TODO - Worktree ... setting the stage for multiple agents running concurrently.
+
+### Fixes
+
+*
+
+
 

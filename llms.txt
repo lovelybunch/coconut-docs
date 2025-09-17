@@ -12,7 +12,12 @@
 - [Devcontainer Setup](/devcontainers): [Devcontainers](https://containers.dev) are a feature of VS Code, Cursor, and other supported IDEs that enable you to create a consistent and secure development environment using containers. They run in an isolated environment, making them particularly well-suited for coding agents and AI-powered development tools such as [Claude Code](https://www.anthropic.com/claude-code), Google [Gemini CLI](https://cloud.google.com/gemini/docs/codeassist/gemini-cli), or OpenAI's [Codex](https://github.com/openai/codex).
 - [Getting started](/getting-started): Node.js 18+
 - [LLM Setup](/llm-setup): Coconut includes an AIAssistant that requires API keys from supported providers. Configure them globally after installation:
+- [MCP Tools](/mcp): The AI Assistant can call MCP tools during a chat to perform actions such as listing and creating Change Proposals. This page summarizes what’s available and how to use it.
 - [Models](/models): ChatGPT 4o
 - [Symlinks](/symlinks): Symlinks allow you to present paths from your project's `.nut` to other areas of either the project or filesystem to allow them to be picked up by IDEs or coding agents.
-- [v1.0.47](/changelog/v1.0.47): Adds feature template to new proposal page
-- [v1.0.48](/changelog/v1.0.48): ...
+- [v1.0.47 - Tropical Moonbars](/changelog/v1.0.47): Adds feature template to new proposal page
+- [v1.0.48 - Island Glow Macarons](/changelog/v1.0.48): Terminals now remember and show recent output after a page refresh,
+with improved text display reliability
+- [v1.0.50 - Island Glow Macarons](/changelog/v1.0.50): Full screen view for AI Assistant
+- [v1.0.51 - Island Glow Macarons](/changelog/v1.0.51): Adds preview to terminal and code screens
+- [v1.0.52 - Glistening Ocean Macarons](/changelog/v1.0.52): Ability to add / edit implementation plan details associated with a proposal
