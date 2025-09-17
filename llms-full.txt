@@ -2642,11 +2642,12 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 * Ability to add / edit implementation plan details associated with a proposal
 * Coding agents now update the assigned change proposal with implementation steps, comments (with suggested future updates), and status upon completion
 * Adds a "code complete" status
-* TODO - Worktree ... setting the stage for multiple agents running concurrently.
+* Layout improvements to coding agent configuration
+* Experimental worktree support on coding agent screen
 
 ### Fixes
 
-*
+* NA
 
 
 
