@@ -2642,6 +2642,7 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 * Ability to add / edit implementation plan details associated with a proposal
 * Coding agents now update the assigned change proposal with implementation steps, comments (with suggested future updates), and status upon completion
 * Adds a "code complete" status
+* New Git settings page allows you to override the default worktree path (which is now a directory outside of the project directory)
 * Layout improvements to coding agent configuration
 * Experimental worktree support on coding agent screen
 
@@ -2650,4 +2651,12 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 * NA
 
 
+## Create a proposal
+
+...
+
+
+## How to configure and start a coding agent
+
+...
 
