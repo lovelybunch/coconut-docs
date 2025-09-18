@@ -1,10 +1,4 @@
-import{u as l,j as s}from"./index-CBdrQ-_1.js";const a={title:"Contributing",description:"undefined"};function i(n){const e={a:"a",code:"code",div:"div",h1:"h1",h2:"h2",h3:"h3",header:"header",hr:"hr",li:"li",ol:"ol",p:"p",pre:"pre",span:"span",strong:"strong",ul:"ul",...l(),...n.components};return s.jsxs(s.Fragment,{children:[s.jsx(e.header,{children:s.jsxs(e.h1,{id:"contributing",children:["Contributing",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#contributing",children:s.jsx(e.div,{"data-autolink-icon":!0})})]})}),`
-`,s.jsxs(e.ul,{children:[`
-`,s.jsx(e.li,{children:"Testing / Building CLI"}),`
-`,s.jsx(e.li,{children:"Testing / Building Web UI"}),`
-`,s.jsx(e.li,{children:"Testing / Building API"}),`
-`]}),`
-`,s.jsx(e.hr,{}),`
+import{u as l,j as s}from"./index-DaZCVKWf.js";const a={title:"Contributing",description:"undefined"};function i(n){const e={a:"a",code:"code",div:"div",h1:"h1",h2:"h2",h3:"h3",header:"header",li:"li",ol:"ol",p:"p",pre:"pre",span:"span",strong:"strong",ul:"ul",...l(),...n.components};return s.jsxs(s.Fragment,{children:[s.jsx(e.header,{children:s.jsxs(e.h1,{id:"contributing",children:["Contributing",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#contributing",children:s.jsx(e.div,{"data-autolink-icon":!0})})]})}),`
 `,s.jsxs(e.h2,{id:"development--version-management",children:["Development & Version Management",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#development--version-management",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
 `,s.jsxs(e.h3,{id:"local-development",children:["Local Development",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#local-development",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
 `,s.jsx(e.p,{children:"For local development with hot reload across all packages:"}),`
@@ -83,4 +77,4 @@ import{u as l,j as s}from"./index-CBdrQ-_1.js";const a={title:"Contributing",des
 `,s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#24292E","--shiki-dark":"#ADBAC7"},children:"├── cli/            # Command-line interface"})}),`
 `,s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#24292E","--shiki-dark":"#ADBAC7"},children:"├── frontend/       # React frontend (bundled into API)"})}),`
 `,s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#24292E","--shiki-dark":"#ADBAC7"},children:"└── coconuts/       # Global CLI wrapper (nut command)"})})]})})}),`
-`,s.jsxs(e.p,{children:[s.jsx(e.strong,{children:"Note:"})," The ",s.jsx(e.code,{children:"frontend"})," package is not published separately as it's bundled into the ",s.jsx(e.code,{children:"api"})," package for distribution."]})]})}function d(n={}){const{wrapper:e}={...l(),...n.components};return e?s.jsx(e,{...n,children:s.jsx(i,{...n})}):i(n)}export{d as default,a as frontmatter};
+`,s.jsxs(e.p,{children:[s.jsx(e.strong,{children:"Note:"})," The ",s.jsx(e.code,{children:"frontend"})," package is not published separately as it's bundled into the ",s.jsx(e.code,{children:"api"})," package for distribution."]})]})}function c(n={}){const{wrapper:e}={...l(),...n.components};return e?s.jsx(e,{...n,children:s.jsx(i,{...n})}):i(n)}export{c as default,a as frontmatter};

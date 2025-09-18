@@ -2073,10 +2073,80 @@ nut init
 
 ### Change Proposals
 
+#### Creating and Managing Proposals
+
 ```bash
+# List all proposals
 nut list
+
+# Create a new proposal
 nut propose "Add user authentication feature"
+
+# View proposal details
+nut show cp-1234567890
 ```
+
+#### Implementing Proposals with AI
+
+The `code` command starts an AI coding session to implement a proposal. The session runs in the background and is visible via the web interface.
+
+```bash
+# Basic implementation
+nut code cp-1234567890
+
+# With autonomous mode (skips permissions)
+nut code cp-1234567890 --autonomous
+
+# With custom instructions
+nut code cp-1234567890 --custom-instructions "Focus on type safety and error handling"
+
+# Create a new git worktree for this proposal
+nut code cp-1234567890 --new-worktree
+
+# Use a different AI model
+nut code cp-1234567890 --model gemini
+
+# Combine multiple flags
+nut code cp-1234567890 --autonomous --new-worktree --custom-instructions "Use modern React patterns"
+```
+
+##### Code Command Options
+
+| Flag                           | Description                                   | Example                                  |
+| ------------------------------ | --------------------------------------------- | ---------------------------------------- |
+| `--model <model>`              | AI model to use (`claude`, `gemini`, `codex`) | `--model gemini`                         |
+| `--api <url>`                  | API base URL                                  | `--api http://localhost:3001`            |
+| `--autonomous`                 | Skip permission prompts (dangerous mode)      | `--autonomous`                           |
+| `--custom-instructions <text>` | Additional instructions for the AI            | `--custom-instructions "Use TypeScript"` |
+| `--new-worktree`               | Create a new git worktree for the session     | `--new-worktree`                         |
+
+##### How It Works
+
+1. **Health Check**: Verifies the Coconut API is running
+2. **Session Creation**: Creates a terminal session via the API
+3. **Worktree Setup**: Optionally creates a new git worktree
+4. **MCP Integration**: Loads available MCP servers and agents
+5. **Command Execution**: Sends the AI command to the terminal session via WebSocket
+6. **Background Execution**: Runs headlessly while remaining visible in the web UI
+
+##### Monitoring Sessions
+
+```bash
+# The command provides a web UI link for monitoring
+nut code cp-1234567890
+# 📱 You can monitor progress at: http://localhost:3000/terminal/cp-001
+
+# Press Ctrl+C to stop monitoring (session continues running)
+# 💡 Session continues running at: http://localhost:3000/terminal/cp-001
+```
+
+##### Session Integration
+
+* **Web UI Visibility**: All sessions appear in the web interface
+* **Real-time Updates**: Watch AI progress in the browser
+* **Proposal Updates**: AI automatically updates proposal files when complete
+* **Persistent Sessions**: Sessions continue running even if CLI disconnects
+* **Future Monitoring**: Upcoming `nut monitor` command will show all active sessions
 
 #### Web Interface
 
@@ -2090,20 +2160,36 @@ On a remote server or devcontainer you can start with the following to make it a
 nut serve --port=3002 --host=0.0.0.0
 ```
 
+### Configuration
+
+```bash
+# Manage global configuration
+nut config
+```
+
+### Agent Management
+
+```bash
+# List available agents
+nut agent
+
+# Agents are automatically loaded when using the code command
+```
+
 ### Help
 
 ```bash
+# General help
 nut --help
+
+# Command-specific help
+nut code --help
+nut propose --help
+nut serve --help
 ```
 
 
 ## Contributing
-
-* Testing / Building CLI
-* Testing / Building Web UI
-* Testing / Building API
-
-***
 
 ### Development & Version Management
 
@@ -2597,7 +2683,7 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 * Resolves missing MCP configuration file after `nut init`
 
 
-## v1.0.48 - Island Glow Macarons
+## v1.0.48 - Coconut Dipping Dots
 
 ### Fixes
 
@@ -2609,7 +2695,7 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 * Tweaks output when running `nut serve`
 
 
-## v1.0.50 - Island Glow Macarons
+## v1.0.50 - Glazed Coconut Fritters
 
 ### Features
 
@@ -2624,7 +2710,7 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 * Increase real estate on chat window by putting dynamic helpers under dropdown (under "Quick prompts")
 
 
-## v1.0.51 - Island Glow Macarons
+## v1.0.51 - Island Glow Tarts
 
 ### Features
 
@@ -2635,7 +2721,7 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 * Resolves issue with the built-in MCP servers when creating proposals
 
 
-## v1.0.52 - Glistening Ocean Macarons
+## v1.0.52 - Glistening Ocean Macaroons
 
 ### Features
 
@@ -2649,6 +2735,18 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 ### Fixes
 
 * NA
+
+
+## v1.0.53 - Banana Coconut Scones
+
+### Features
+
+* Renames `nut implement` to `nut code`
+* Adds a range of flexibility to such as `nut code cp-001` that starts the selected job which can then be monitored in the Coconut UI
+
+### Fixes
+
+* Resolves CLI commands looking for incorrect directory (rather than `.nut`)
 
 
 ## Create a proposal
