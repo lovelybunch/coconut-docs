@@ -2175,6 +2175,15 @@ nut serve --port=3002 --host=0.0.0.0
 nut config
 ```
 
+### Schema Reference Templates
+
+Use the schema command to regenerate the reference files in `.nut/.schema` if they drift from the canonical templates or after upgrading Coconut.
+
+```bash
+# Refresh all schema templates from packages/shared/system-prompts/schema
+nut schema refresh
+```
+
 ### Agent Management
 
 ```bash
@@ -2199,6 +2208,11 @@ nut serve --help
 
 ## Contributing
 
+```
+cursor --folder-uri "vscode-remote://ssh-remote+bluer-meerkat/home/deployer/developer/coconut-dev"
+cursor --folder-uri vscode-remote://ssh-remote+<hostname>/<folder_path>
+```
+
 ### Development & Version Management
 
 #### Local Development
@@ -2213,6 +2227,14 @@ pnpm run dev
 cd packages/api && pnpm run dev      # API server with tsx watch
 cd packages/frontend && pnpm run dev # Frontend with Vite HMR
 cd packages/cli && pnpm run dev      # CLI with TypeScript watch
+```
+
+#### Testing the CLI
+
+```
+node ../coconut/packages/cli/dist/index.js propose “change the title to ‘John’”
+node ../coconut/packages/cli/dist/index.js code cp-002 --autonomous --new-worktree --model claude
+node ./packages/cli/dist/index.js schema refresh
 ```
 
 #### Version Bumping
@@ -2762,6 +2784,8 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 ...
 
 
+
+
 ## How to configure and start a coding agent
 
 ...
@@ -2775,16 +2799,20 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 * Clone locally and install the dependencies with `npm install`
 * If you're running locally, simply make sure you've got Coconut [installed](https://docs.coconut.dev/getting-started) or run in a [devcontainer](https://docs.coconut.dev/devcontainers) for easier config / safety
 * Initialize your Coconut with `nut init` and start serving `nut serve`
-* Create your first change proposal and kick it off the code:
+
+You're now ready to create first change proposal and get it started:
+
+### Use the `nut` CLI
 
 ```
 > nut propose "Change the title to be 'Coconut'"
 > nut code cp-001 --autonomous --new-worktree
 ```
 
-### Running Two Agents Simulataneously
+### Use the Web UI
 
-```
-> 
-```
+* Open [http://localhost:3000](http://localhost:3000) (which is the default port that Coconut runs on locally)
+* Navigation to the proposals section and create a proposal
+* From the proposal view click `Prepare Coding Agent`
+* Optional `Configure` (wherein you can choose a coding agent) and click `Start Coding`
 
