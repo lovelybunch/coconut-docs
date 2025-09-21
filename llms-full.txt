@@ -2779,6 +2779,20 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 * Resolves CLI commands looking for incorrect directory (rather than `.nut`)
 
 
+## v1.0.53 - Pandan Coconut Fudge
+
+### Features
+
+* NA
+
+### Fixes
+
+* Ensure all changes to proposals, knowledge, etc made by the coding agents adhere to the schema
+* Layout improvements to the Code screen
+* Layout improvements to the Knowledge Base screen
+* The ability to add content in the AI Assistant chat is disabled after the chat starts
+
+
 ## Create a proposal
 
 ...

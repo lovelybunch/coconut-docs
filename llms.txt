@@ -22,6 +22,7 @@ with improved text display reliability
 - [v1.0.51 - Island Glow Tarts](/changelog/v1.0.51): Adds preview to terminal and code screens
 - [v1.0.52 - Glistening Ocean Macaroons](/changelog/v1.0.52): Ability to add / edit implementation plan details associated with a proposal
 - [v1.0.53 - Banana Coconut Scones](/changelog/v1.0.53): Renames `nut implement` to `nut code`
+- [v1.0.53 - Pandan Coconut Fudge](/changelog/v1.0.54): NA
 - [Create a proposal](/how-to/create-a-proposal): ...
 - [How to configure and start a coding agent](/how-to/start-a-coding-agent): ...
 - [How to use a Vercel template](/how-to/use-a-vercel-template): Go go [https://vercel.com/templates](https://vercel.com/templates) and select a template (e.g. [https://github.com/lovelybunch/template-next-blog](https://github.com/lovelybunch/template-next-blog))

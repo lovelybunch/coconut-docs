@@ -1,4 +1,4 @@
-import{u as s,j as e}from"./index-BXnB6CCF.js";const a={title:"Models",description:"undefined"};function t(i){const n={a:"a",aside:"aside",div:"div",h1:"h1",h2:"h2",header:"header",li:"li",p:"p",ul:"ul",...s(),...i.components};return e.jsxs(e.Fragment,{children:[e.jsx(n.header,{children:e.jsxs(n.h1,{id:"models",children:["Models",e.jsx(n.a,{"aria-hidden":"true",tabIndex:"-1",href:"#models",children:e.jsx(n.div,{"data-autolink-icon":!0})})]})}),`
+import{u as s,j as e}from"./index-CoyAbOLv.js";const a={title:"Models",description:"undefined"};function t(i){const n={a:"a",aside:"aside",div:"div",h1:"h1",h2:"h2",header:"header",li:"li",p:"p",ul:"ul",...s(),...i.components};return e.jsxs(e.Fragment,{children:[e.jsx(n.header,{children:e.jsxs(n.h1,{id:"models",children:["Models",e.jsx(n.a,{"aria-hidden":"true",tabIndex:"-1",href:"#models",children:e.jsx(n.div,{"data-autolink-icon":!0})})]})}),`
 `,e.jsxs(n.h2,{id:"ai-assistant",children:["AI Assistant",e.jsx(n.a,{"aria-hidden":"true",tabIndex:"-1",href:"#ai-assistant",children:e.jsx(n.div,{"data-autolink-icon":!0})})]}),`
 `,e.jsxs(n.ul,{children:[`
 `,e.jsx(n.li,{children:"ChatGPT 4o"}),`
