@@ -7,6 +7,7 @@
 - [GAIT: Agent-Native Source Control Management System](/GAIT_PRODUCT_SPEC): GAIT (Git-Adjacent Intent Tracking) is a revolutionary source control management system designed for the era of agentic engineering and multi-role collaboration. Unlike traditional VCS that focuses on line-by-line changes, GAIT treats intent, plans, experiments, and product operations as first-class citizens alongside code.
 - [Agents & Registry](/agents): multiple places / types
 - [API Reference](/api): Complete reference for all Coconut API endpoints. All endpoints follow RESTful conventions and return JSON responses with consistent error handling.
+- [Authentication](/authentication): Coconut includes an optional, file-based authentication system for team deployments. Authentication is **disabled by default** and completely opt-in.
 - [CLI (aka ](/cli): From the root of your project where you want to setup your `.nut`.
 - [Contributing](/contributing): For local development with hot reload across all packages:
 - [Devcontainer Setup](/devcontainers): [Devcontainers](https://containers.dev) are a feature of VS Code, Cursor, and other supported IDEs that enable you to create a consistent and secure development environment using containers. They run in an isolated environment, making them particularly well-suited for coding agents and AI-powered development tools such as [Claude Code](https://www.anthropic.com/claude-code), Google [Gemini CLI](https://cloud.google.com/gemini/docs/codeassist/gemini-cli), or OpenAI's [Codex](https://github.com/openai/codex).
@@ -22,7 +23,10 @@ with improved text display reliability
 - [v1.0.51 - Island Glow Tarts](/changelog/v1.0.51): Adds preview to terminal and code screens
 - [v1.0.52 - Glistening Ocean Macaroons](/changelog/v1.0.52): Ability to add / edit implementation plan details associated with a proposal
 - [v1.0.53 - Banana Coconut Scones](/changelog/v1.0.53): Renames `nut implement` to `nut code`
-- [v1.0.53 - Pandan Coconut Fudge](/changelog/v1.0.54): NA
+- [v1.0.54 - Pandan Coconut Fudge](/changelog/v1.0.54): NA
+- [v1.0.55 - Coconut Fudge Sunday](/changelog/v1.0.55): NA
+- [v1.0.56 - Coconut Venus Tarts](/changelog/v1.0.56): NA
+- [v1.0.57 - Nutty Nuts](/changelog/v1.0.57): Adds authentication to CLI and Web
 - [Create a proposal](/how-to/create-a-proposal): ...
 - [How to configure and start a coding agent](/how-to/start-a-coding-agent): ...
 - [How to use a Vercel template](/how-to/use-a-vercel-template): Go go [https://vercel.com/templates](https://vercel.com/templates) and select a template (e.g. [https://github.com/lovelybunch/template-next-blog](https://github.com/lovelybunch/template-next-blog))

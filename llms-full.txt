@@ -2061,6 +2061,344 @@ The API uses semantic versioning. The current version is `v1`. Breaking changes 
 TypeScript SDK is available in the `@lovelybunch/types` package for type-safe API interactions.
 
 
+## Authentication
+
+Coconut includes an optional, file-based authentication system for team deployments. Authentication is **disabled by default** and completely opt-in.
+
+### Design Philosophy
+
+* **Opt-in by default** - Works without authentication for local/solo use
+* **File-based storage** - No database required, auth config lives in `.nut/auth.json`
+* **Email whitelist model** - Admins pre-configure allowed users
+* **Role-based access** - Support for multiple team roles
+* **Non-breaking** - Existing projects work identically with or without auth
+
+### Quick Start
+
+#### Initialize Authentication
+
+```bash
+# From your project root
+nut auth init
+```
+
+You'll be prompted for:
+
+* Admin email address
+* Admin name
+* Admin password (minimum 8 characters)
+
+This creates `.nut/auth.json` with `enabled: false` by default.
+
+#### Enable Authentication
+
+```bash
+nut auth toggle
+```
+
+Confirms the action and enables authentication. **Important:** This regenerates the session secret, invalidating all existing sessions.
+
+#### Add Users
+
+```bash
+nut auth add-user
+```
+
+You'll be prompted for:
+
+* Email address (must be whitelisted before they can register)
+* Full name
+* Role (admin, manager, engineer, designer, product\_manager, viewer)
+
+#### List Users
+
+```bash
+nut auth list-users
+```
+
+Shows all configured users with their roles and registration status.
+
+### Web UI Management
+
+#### Settings > Authentication
+
+Access at `/settings/authentication` to:
+
+* **Toggle authentication** on/off
+* **Toggle self-registration** - Allow whitelisted users to self-register
+* **Manage users** - Add, update roles, reset passwords, delete users
+* **Configure session settings** - Expiration time, cookie settings
+
+**Note:** This page is accessible when auth is disabled (for setup) or when logged in as an admin.
+
+#### Settings > API Keys
+
+Access at `/settings/api-keys` to:
+
+* **Create API keys** for programmatic access (CI/CD, automation)
+* **Set expiration dates** - 30 days, 90 days, 1 year, or never
+* **View active keys** - See masked previews, creation dates, last used
+* **Delete keys** - Revoke access immediately
+
+**Security:** API keys are only shown once on creation. Store them securely.
+
+### Authentication Methods
+
+#### User Sessions (JWT)
+
+* Email/password authentication
+* JWT tokens stored in HTTP-only cookies
+* Default expiration: 7 days (configurable)
+* Automatic token refresh on requests
+
+**Login Flow:**
+
+1. Visit `/login` when auth is enabled
+2. Enter email and password
+3. Optionally register if email is whitelisted and self-registration is enabled
+4. Redirected to dashboard on success
+
+#### API Keys
+
+For programmatic access (CI/CD, scripts, automation):
+
+```bash
+# Include in requests
+curl -H "X-API-Key: your-key-here" \
+  http://localhost:3000/api/v1/proposals
+```
+
+**Features:**
+
+* Separate from user sessions
+* Scoped permissions (future)
+* Expiration dates
+* Last used tracking
+* One-time display on creation
+
+### Role-Based Access Control
+
+#### Available Roles
+
+| Role                 | Description        | Access Level                          |
+| -------------------- | ------------------ | ------------------------------------- |
+| **admin**            | Full system access | Can manage auth, users, all resources |
+| **manager**          | Team management    | Can manage proposals, users (limited) |
+| **engineer**         | Developer access   | Can create/edit proposals, code       |
+| **designer**         | Design access      | Can create/edit proposals, resources  |
+| **product\_manager** | Product access     | Can create/edit proposals, specs      |
+| **viewer**           | Read-only access   | Can view but not modify               |
+
+#### Admin-Only Features
+
+* Authentication settings management
+* User management (add, remove, reset passwords)
+* API key management
+* System configuration
+
+### Security Considerations
+
+#### Password Security
+
+* Bcrypt hashing with 10 salt rounds
+* Minimum 8 characters required
+* Admin can reset user passwords
+
+#### Token Security
+
+* JWT tokens signed with auto-generated secret
+* HTTP-only cookies prevent XSS attacks
+* SameSite attribute prevents CSRF
+* Configurable expiration (default 7 days)
+
+#### API Key Security
+
+* Keys hashed with bcrypt before storage
+* Only shown once on creation
+* Tracked: last used timestamp, expiration date
+* Can be revoked immediately
+
+#### Session Invalidation
+
+When toggling authentication on/off, all sessions are automatically invalidated:
+
+* Session secret is regenerated
+* All users must re-authenticate
+* Ensures clean security state
+
+#### File Permissions
+
+**Important:** Add `.nut/auth.json` to your `.gitignore`:
+
+```bash
+echo ".nut/auth.json" >> .gitignore
+```
+
+This file contains:
+
+* Password hashes
+* Session secrets
+* API key hashes
+
+### Production Deployment
+
+#### Required for Internet Use
+
+1. **HTTPS/TLS** - Absolutely required
+   * Without HTTPS, passwords and tokens are sent in cleartext
+   * Use nginx/Caddy with SSL cert, or platform like Render/Railway
+
+2. **Enable Secure Cookies** - Set in auth.json:
+   ```json
+   "session": {
+     "secure": true,
+     "cookieName": "nut-session",
+     "expiresIn": "7d"
+   }
+   ```
+
+3. **Environment Variables** - For production secret:
+   ```bash
+   export NUT_SESSION_SECRET="your-long-random-secret-here"
+   ```
+
+4. **CORS Configuration** - Restrict allowed origins in production
+
+#### Recommended
+
+* Rate limiting for login attempts
+* Account lockout after failed attempts
+* Audit logging for security events
+* Regular session secret rotation
+* Monitor failed authentication attempts
+
+### Configuration File Structure
+
+`.nut/auth.json` (created by `nut auth init`):
+
+```json
+{
+  "version": "1.0",
+  "enabled": false,
+  "allowRegistration": true,
+  "providers": {
+    "local": {
+      "enabled": true,
+      "users": [
+        {
+          "id": "user-123",
+          "email": "admin@example.com",
+          "name": "Admin User",
+          "role": "admin",
+          "passwordHash": "$2b$10$...",
+          "registered": true,
+          "createdAt": "2025-01-15T10:00:00Z",
+          "updatedAt": "2025-01-15T10:00:00Z"
+        }
+      ]
+    },
+    "oauth": {
+      "google": {
+        "enabled": false,
+        "clientId": "",
+        "clientSecret": "",
+        "callbackUrl": ""
+      }
+    }
+  },
+  "session": {
+    "secret": "auto-generated-secret",
+    "expiresIn": "7d",
+    "cookieName": "nut-session",
+    "secure": false
+  },
+  "apiKeys": []
+}
+```
+
+### Troubleshooting
+
+#### Can't access after enabling auth
+
+**Solution:** Clear your browser cookies and log in again. Or run `nut auth toggle` twice to regenerate sessions.
+
+#### 403 Forbidden on auth routes
+
+**Check:**
+
+* Are you logged in?
+* Is your user role `admin`?
+* Try logging out and back in
+
+#### Sessions not persisting
+
+**Check:**
+
+* Is HTTPS enabled in production?
+* Are cookies enabled in your browser?
+* Check `secure` flag in `auth.json` matches your deployment (true for HTTPS, false for HTTP)
+
+#### Forgot admin password
+
+**Solution:** Use CLI to reset:
+
+1. Edit `.nut/auth.json` directly to add a new admin user
+2. Or delete `.nut/auth.json` and run `nut auth init` again
+
+### API Reference
+
+#### Authentication Endpoints
+
+```
+POST   /api/v1/auth/login              # Email/password login
+POST   /api/v1/auth/register           # Self-registration (if enabled)
+POST   /api/v1/auth/logout             # Clear session
+GET    /api/v1/auth/me                 # Get current user
+POST   /api/v1/auth/change-password    # Change password
+GET    /api/v1/auth/status             # Check if auth enabled (public)
+```
+
+#### Admin Endpoints (requires admin role)
+
+```
+GET    /api/v1/auth-settings           # Get auth config
+PUT    /api/v1/auth-settings           # Update auth settings
+POST   /api/v1/auth-settings/users     # Add user to whitelist
+PUT    /api/v1/auth-settings/users/:id # Update user
+POST   /api/v1/auth-settings/users/:id/reset-password  # Reset password
+DELETE /api/v1/auth-settings/users/:id # Remove user
+```
+
+#### API Key Endpoints
+
+```
+GET    /api/v1/api-keys                # List API keys
+POST   /api/v1/api-keys                # Create API key
+DELETE /api/v1/api-keys/:id            # Delete API key
+```
+
+### Future Enhancements
+
+**Planned for v2:**
+
+* OAuth providers (Google, GitHub, GitLab, Azure AD)
+* SAML/SSO for enterprise
+* Two-factor authentication (TOTP)
+* Password reset via email
+* WebSocket authentication
+* Audit logging
+* Session management UI
+* Rate limiting
+* Account lockout
+* IP whitelisting
+
+### Related Documentation
+
+* [CLI Reference](/cli) - Command-line authentication management
+* [API Reference](/api) - Authentication API endpoints
+* [Security Best Practices](/contributing#security) - Secure deployment guidelines
+
+
 ## CLI (aka `nut`)
 
 ### Initialize a new Coconut
@@ -2779,7 +3117,7 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 * Resolves CLI commands looking for incorrect directory (rather than `.nut`)
 
 
-## v1.0.53 - Pandan Coconut Fudge
+## v1.0.54 - Pandan Coconut Fudge
 
 ### Features
 
@@ -2791,6 +3129,41 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 * Layout improvements to the Code screen
 * Layout improvements to the Knowledge Base screen
 * The ability to add content in the AI Assistant chat is disabled after the chat starts
+
+
+## v1.0.55 - Coconut Fudge Sunday
+
+### Features
+
+* NA
+
+### Fixes
+
+* Hotfix to address schema files not being bundled
+
+
+## v1.0.56 - Coconut Venus Tarts
+
+### Features
+
+* NA
+
+### Fixes
+
+* Removes `metrics` from `goals` section in `project.md` schema and handling in web UI
+* Streamlines display for Project Context and Technical Architecture (with the emphasis shifting to storing more directly in the markdown)
+* Updates AI Assistant to be clearer in terms of providing context, etc.
+
+
+## v1.0.57 - Nutty Nuts
+
+### Features
+
+* Adds authentication to CLI and Web
+
+### Fixes
+
+* Various UI / UX tweaks
 
 
 ## Create a proposal
