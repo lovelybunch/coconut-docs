@@ -1323,7 +1323,111 @@ This approach ensures teams can start using GAIT today while preserving the opti
 
 ## Agents & Registry
 
-* multiple places / types
+Agents capture reusable AI personas that can be invoked from the CLI, terminal sessions, and the autonomous job scheduler. Each agent is backed by a markdown document in `.nut/agents/` with YAML frontmatter describing its capabilities, color, and the MCP servers (tools) it can access.
+
+The Agents page provides a streamlined interface for browsing and managing your agent registry. Cards are fully clickable with hover states for easy navigation, and each agent's detail page includes quick actions for editing or launching sessions.
+
+### Configure MCP Servers First
+
+Before assigning tools to an agent, register the MCP servers that should be discoverable:
+
+1. Navigate to **Settings → MCP Servers** in the web app (`/settings/mcp`).
+2. Add or edit entries. Each server lives under the `mcpServers` key inside `.nut/mcp/config.json`.
+3. Ensure `enabled: true` for any server that should appear in the agent picker.
+
+Example configuration:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "enabled": true
+    },
+    "firecrawl-mcp": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "enabled": true,
+      "env": {
+        "FIRECRAWL_API_KEY": "..."
+      }
+    }
+  }
+}
+```
+
+Only enabled servers are surfaced in the agent UI. Removing or disabling a server automatically prunes it from any agent that referenced it.
+
+### Creating an Agent in the UI
+
+1. Open **Agents → Create New** (`/agents/new`).
+2. Complete the required fields: `Name` (used for the filename) and `Description`.
+3. In **Tools (Optional)** the app now lists MCP servers discovered from the config above. Select the servers the agent should be allowed to invoke. Leave everything unchecked to inherit all available servers at runtime.
+4. (Optional) Provide detailed system instructions in *Agent Instructions*.
+5. Submit the form. The API persists a new markdown file in `.nut/agents/`.
+
+The stored document uses array-based frontmatter for tools:
+
+```yaml
+---
+name: playwright-runner
+description: Runs browser-based regression suites via Playwright MCP
+color: cyan
+tools:
+  - playwright
+  - firecrawl-mcp
+---
+You are a QA specialist...
+```
+
+Historically, tools were saved as comma-delimited strings. The backend now normalises old documents into arrays when they are read or rewritten, so downstream consumers always receive `string[]` metadata.
+
+### Editing an Agent
+
+1. Click any agent card to view its details, then click the **Edit** button in the top right
+2. The MCP server list is dynamically refreshed from the config file. Disconnected or disabled servers appear unchecked and cannot be re-selected until they are re-enabled.
+3. Removing a server from the configuration causes the agent editor to drop that selection on save, keeping the registry aligned with the live tool inventory.
+
+The edit page maintains the same clean layout as other agent pages, with action buttons consistently placed in the top right for easy access.
+
+### CLI Workflows
+
+The `nut agent create` & `nut agent update` commands accept comma-separated `--tools` flags. The core storage layer converts those values into arrays, so the CLI coexists with the new UI.
+
+```bash
+nut agent create "playwright-runner" "Runs Playwright checks" \
+  --tools "playwright,firecrawl-mcp"
+```
+
+### Launching Agent Sessions
+
+Agents can be launched directly from the Agents page for quick, focused work sessions:
+
+1. Navigate to **Agents** (`/agents`) and browse your agent registry
+2. Click any agent card to view its details
+3. Click **Prepare Agent** in the Agent Actions section
+4. This opens a dedicated terminal session where you can configure:
+   * Which CLI agent to use (Claude Code, Codex, or Gemini)
+   * MCP servers (pre-populated from the agent's tool list)
+   * Additional agents to include
+   * Custom instructions for this specific session
+   * Automation preferences
+
+Agent sessions use minimal base instructions, allowing the agent's own content and your custom instructions to drive the workflow. This makes them ideal for specialized tasks, experimentation, or working with domain-specific agents.
+
+### How Agents Are Used
+
+* **Direct launch ("Prepare Agent")**: Click the Prepare Agent button on any agent's detail page to start a focused session. The agent is automatically selected and its tools are pre-configured. Agent sessions appear in the Code section for easy tracking.
+* **Change proposal workflows**: Select agents in the "Configure Coding Agent" modal when working on a change proposal. Agent instructions supplement the structured change proposal workflow.
+* **Scheduler jobs**: The job runner respects the agent metadata and handles devcontainer constraints by prefixing Claude invocations with `IS_SANDBOX=1` and wrapping Codex with `script(1)` when running as root.
+* **Programmatic access**: `GET /api/v1/agents` returns agent metadata with `tools: string[]`, ensuring automations, the sidebar, and any future integrations see a consistent shape.
+
+### Troubleshooting
+
+* If a server is missing from the picker, confirm it is present and `enabled` in `.nut/mcp/config.json` and that the API has permission to read the file.
+* When working in devcontainers, make sure CLI binaries (`claude`, `codex`, `gemini`) are on `$PATH`; the scheduler performs a `command -v` check before executing a job.
+* Legacy agents still storing `tools` as a comma-separated string will be rewritten to the new array form on the next update, or you can manually run them through the editor to update immediately.
 
 
 ## API Reference
@@ -2506,6 +2610,20 @@ On a remote server or devcontainer you can start with the following to make it a
 nut serve --port=3002 --host=0.0.0.0
 ```
 
+To prevent automatic browser opening (useful for SSH environments):
+
+```bash
+nut serve --no-open
+```
+
+##### Serve Command Options
+
+| Flag            | Description                       | Example          |
+| --------------- | --------------------------------- | ---------------- |
+| `--port <port>` | Port to run the server on         | `--port 3002`    |
+| `--host <host>` | Host to bind the server to        | `--host 0.0.0.0` |
+| `--no-open`     | Prevent automatic browser opening | `--no-open`      |
+
 ### Configuration
 
 ```bash
@@ -2783,6 +2901,487 @@ And you should now see the following:
 
 ![Coconut Web UI](./images/screenshot.png)
 
+### Ubuntu
+
+The following walks through a fresh install on an Ubuntu system.
+
+Start with installing NVM and Node `v22`:
+
+```
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+
+export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+
+nvm install 22
+```
+
+Install the various build dependencies to install `node-pty` (and `git`)
+
+```
+sudo apt install -y build-essential python3 make g++ git
+npm install node-pty
+```
+
+
+## Git Management
+
+Coconut provides comprehensive git operations through an integrated UI and API, enabling you to manage branches, commits, worktrees, and remote synchronization without leaving your development environment.
+
+### Overview
+
+The Git Management system in Coconut offers:
+
+* **Repository Status** - Real-time view of your current branch, uncommitted changes, and sync status
+* **Branch Management** - Create, switch, merge, and delete branches with visual feedback
+* **Commit Operations** - Commit changes with smart guidance for default branches
+* **Worktrees** - Work on multiple branches simultaneously in separate directories
+* **Remote Sync** - Push and pull changes with authentication status monitoring
+* **Settings** - Configure worktree paths and manage credentials
+
+All git operations are designed to work non-interactively with proper timeout protection to prevent UI hangs.
+
+### Repository Status
+
+The Repository Status section provides a real-time overview of your working directory:
+
+#### Current Branch Information
+
+* Branch name with visual indicator
+* Commits ahead of remote (with **unpushed indicator** when > 0)
+* Commits behind remote
+* Upstream tracking branch
+
+#### Uncommitted Changes
+
+* List of modified, added, deleted, and untracked files
+* Status indicators for each file (M, A, D, U, etc.)
+* Quick overview of what needs to be committed
+
+#### Status Indicators
+
+When you have commits that haven't been pushed to the remote, Coconut highlights them with:
+
+* Amber background highlighting on the ahead count
+* "unpushed" label instead of "ahead"
+* Visual prominence to remind you to push your changes
+
+### Branch Management
+
+Coconut provides a complete branch workflow through the Branches section.
+
+#### Creating Branches
+
+1. Select a **base branch** to branch from (typically `main` or your current branch)
+2. Enter a **branch name** (e.g., `feature/new-feature`)
+3. Click **Create Branch**
+
+The branch is created locally and you can switch to it when ready.
+
+#### Switching Branches
+
+Click the **Switch** button next to any branch to check it out. Coconut will:
+
+* Switch your working directory to the selected branch
+* Update the repository status
+* Refresh all git-related UI elements
+
+#### Merging Branches
+
+Merge any branch into your current branch with three strategies:
+
+* **Merge commit** (default) - Creates a merge commit preserving full history
+* **Squash & merge** - Combines all commits into a single commit
+* **Rebase & merge** - Replays commits on top of the current branch
+
+Select your preferred strategy in the merge dropdown, then click **Merge** next to the branch you want to merge.
+
+#### Deleting Branches
+
+Remove local branches that are no longer needed by clicking the **Delete** button. This performs a force delete (`git branch -D`) to remove the branch even if it hasn't been merged.
+
+**Note:** You cannot delete the currently active branch.
+
+### Commit Changes
+
+The Commit Changes section lets you create commits with smart guidance.
+
+#### Basic Commits
+
+1. Make changes to your files
+2. Enter a commit message describing your changes
+3. Click **Commit**
+
+By default, all uncommitted changes are included. The commit is created on your current branch.
+
+#### Default Branch Protection
+
+When you're on a default branch (`main` or `master`), Coconut displays a warning and suggests creating a feature branch first. This encourages best practices:
+
+* Keeps your default branch stable and deployable
+* Makes it easier to review and test changes
+* Enables working on multiple features simultaneously
+* Simplifies collaboration with your team
+
+You can still commit directly to the default branch if needed by clicking **"Commit to main Anyway"** in the suggestion dialog.
+
+#### Branch Creation Suggestion
+
+If you choose to create a branch from the suggestion dialog:
+
+1. Enter a new branch name
+2. Click **Create Branch & Switch**
+3. Coconut creates the branch from your current branch
+4. Automatically switches to the new branch
+5. You can then commit your changes to the feature branch
+
+### Worktrees
+
+Git worktrees allow you to check out multiple branches simultaneously in different directories. This is perfect for:
+
+* Working on multiple features in parallel
+* Testing changes without switching branches
+* Running builds on one branch while developing on another
+* Reviewing PRs while keeping your current work intact
+
+#### Creating Worktrees
+
+1. Enter a branch name (existing or new)
+2. Click **Create Worktree**
+
+Coconut creates the worktree in the configured location (default: `../worktrees/` relative to your project root).
+
+#### Working with Worktrees
+
+Each worktree:
+
+* Has its own working directory
+* Can be pushed/pulled independently
+* Shows the associated branch name
+* Displays the full filesystem path
+
+#### Worktree Operations
+
+* **Pull** - Fetch and merge/rebase changes from remote
+* **Push** - Push commits to remote repository
+* **Remove** - Delete the worktree directory (prompts for confirmation)
+
+#### Configuring Worktree Location
+
+Navigate to **Settings → Git** to configure where worktrees are created. The path is relative to your project root. We recommend keeping worktrees outside the repository (e.g., `../worktrees`).
+
+### Push and Pull
+
+#### Top-Right Actions
+
+The Git Management page includes quick Push and Pull buttons in the top-right corner:
+
+* **Pull** - Fetch and merge/rebase changes from remote
+  * Choose strategy: Rebase (default), Merge, or Fast-forward only
+* **Push** - Push your current branch to the remote
+  * Shows spinner while pushing
+  * Displays error if authentication fails
+
+Both operations include:
+
+* Loading spinners during execution
+* Success/error toast notifications
+* Automatic authentication dialog on auth failures
+
+#### Pull Strategies
+
+* **Rebase** (recommended) - Replays your commits on top of remote changes for linear history
+* **Merge** - Creates a merge commit when integrating remote changes
+* **Fast-forward only** - Only succeeds if your branch can be fast-forwarded (no merge needed)
+
+Configure the default strategy in the pull dropdown on the Repository Status section.
+
+### Git Authentication
+
+Coconut requires proper git authentication to push and pull changes to remote repositories. This section covers how to configure authentication for GitHub, GitLab, and other git providers.
+
+#### Why Authentication is Required
+
+When you use Coconut's Git features, the underlying git commands need to authenticate with your remote repository. Without proper authentication, operations will fail with error messages like:
+
+* `terminal prompts disabled`
+* `could not read Username`
+* `Authentication required`
+
+Coconut runs git commands non-interactively (`GIT_TERMINAL_PROMPT=0`) to prevent the UI from hanging, so credentials must be configured ahead of time.
+
+#### Authentication Methods
+
+Coconut supports all standard git authentication methods. Choose the one that best fits your workflow:
+
+##### Method 1: SSH Keys (Recommended)
+
+SSH keys are the most secure and convenient method for git authentication. They work seamlessly with Coconut's automated git operations.
+
+**Setup SSH Keys:**
+
+1. **Generate a new SSH key:**
+
+```bash
+ssh-keygen -t ed25519 -C "your_email@example.com"
+```
+
+When prompted, press Enter to save the key to the default location (`~/.ssh/id_ed25519`).
+
+2. **Start the SSH agent:**
+
+```bash
+eval "$(ssh-agent -s)"
+```
+
+3. **Add your SSH key to the agent:**
+
+```bash
+ssh-add ~/.ssh/id_ed25519
+```
+
+4. **Copy your public key:**
+
+```bash
+# macOS
+pbcopy < ~/.ssh/id_ed25519.pub
+
+# Linux
+cat ~/.ssh/id_ed25519.pub | xclip -selection clipboard
+
+# Windows (Git Bash)
+cat ~/.ssh/id_ed25519.pub | clip
+```
+
+5. **Add the key to your git provider:**
+
+* **GitHub**: Settings → SSH and GPG keys → New SSH key
+* **GitLab**: Preferences → SSH Keys
+* **Bitbucket**: Personal settings → SSH keys
+
+6. **Update your remote URL to use SSH:**
+
+```bash
+# Check current remote URL
+git remote -v
+
+# If using HTTPS, switch to SSH
+git remote set-url origin git@github.com:username/repository.git
+```
+
+##### Method 2: Git Credential Manager
+
+Git Credential Manager securely stores your credentials using your operating system's credential store.
+
+**macOS (osxkeychain):**
+
+macOS comes with built-in credential helper support:
+
+```bash
+# Check if already configured
+git config --get credential.helper
+
+# If not configured, set it up
+git config --global credential.helper osxkeychain
+```
+
+The next time you push/pull, you'll be prompted for your username and password (or personal access token). These credentials will be stored securely in your macOS Keychain.
+
+**Linux/Windows (Git Credential Manager):**
+
+Install Git Credential Manager for enhanced credential storage:
+
+```bash
+# macOS (via Homebrew)
+brew install git-credential-manager
+
+# Linux (Debian/Ubuntu)
+wget https://github.com/git-ecosystem/git-credential-manager/releases/latest/download/gcm-linux_amd64.deb
+sudo dpkg -i gcm-linux_amd64.deb
+
+# Windows (via winget)
+winget install Git.Git-Credential-Manager
+```
+
+##### Method 3: Personal Access Tokens (HTTPS)
+
+For HTTPS authentication, use a Personal Access Token instead of your password.
+
+**Creating a Personal Access Token:**
+
+**GitHub:**
+
+1. Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Generate new token
+3. Select scopes: `repo` (full control of private repositories)
+4. Copy the token
+
+**GitLab:**
+
+1. Preferences → Access Tokens
+2. Create personal access token
+3. Select scopes: `read_repository`, `write_repository`
+4. Copy the token
+
+**Option A: Enter Credentials via Coconut UI (Easiest)**
+
+For HTTPS remotes, Coconut provides a convenient UI to enter your credentials:
+
+1. Navigate to **Settings → Git** or click the auth status indicator on the Git page
+2. Click **"Enter Credentials"** button
+3. Enter your username and personal access token
+4. Click **"Save Credentials"**
+
+Coconut will automatically:
+
+* Configure the appropriate credential helper for your OS
+* Store credentials securely (macOS Keychain, Windows Credential Manager, etc.)
+* Test the authentication
+
+**Option B: Command Line Setup**
+
+When prompted for a password during git operations, use your personal access token instead:
+
+```bash
+# Configure git to cache credentials
+git config --global credential.helper store
+
+# Next push/pull will prompt for credentials
+git push
+# Username: your-username
+# Password: <paste-your-personal-access-token>
+```
+
+**Note:** `credential.helper store` saves credentials in plain text at `~/.git-credentials`. For better security, use Git Credential Manager instead.
+
+#### Checking Authentication Status
+
+Coconut provides built-in tools to verify your git authentication:
+
+**In the UI:**
+
+1. Navigate to **Settings → Git**
+2. Check the "Remote Authentication" section
+3. Click "Check Status" to verify connectivity
+
+You'll see:
+
+* ✅ **Authenticated**: Your git credentials are properly configured
+* ❌ **Not Authenticated**: Authentication setup required
+
+The Git Management page also shows a small authentication badge in the top-left corner that links to Settings.
+
+**Via Command Line:**
+
+Test your authentication manually:
+
+```bash
+# Test SSH connection (for SSH method)
+ssh -T git@github.com
+
+# Test HTTPS connection (for HTTPS method)
+git ls-remote origin HEAD
+```
+
+#### Troubleshooting Authentication
+
+##### "terminal prompts disabled" Error
+
+This error occurs when git tries to prompt for credentials but can't because Coconut runs git commands non-interactively.
+
+**Solution:**
+
+* Set up SSH keys (recommended)
+* Configure Git Credential Manager
+* Use credential helper to cache tokens
+
+##### Authentication Timeout
+
+Coconut times out git operations after 30 seconds to prevent indefinite hangs.
+
+**Solution:**
+
+* Ensure your credentials are properly cached
+* Check your network connection
+* Verify your remote repository is accessible
+
+##### Push/Pull Fails but Manual Commands Work
+
+If git commands work in your terminal but fail in Coconut, you may have credential helpers that only work interactively.
+
+**Solution:**
+
+* Configure SSH keys (works in all contexts)
+* Use Git Credential Manager (persists across sessions)
+* Avoid `credential.helper cache` (only works in active terminal sessions)
+
+##### SSH Key Not Found
+
+If you see "Permission denied (publickey)", your SSH key isn't being used.
+
+**Solution:**
+
+```bash
+# Verify SSH agent is running
+ssh-add -l
+
+# Add your key to the agent
+ssh-add ~/.ssh/id_ed25519
+
+# Configure SSH to use your key automatically
+cat >> ~/.ssh/config << EOF
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+EOF
+```
+
+### Settings
+
+The Git Settings page (**Settings → Git**) provides configuration for git operations.
+
+#### Remote Authentication
+
+* **Authentication Status** - Real-time check of remote connectivity
+* **Credential Helper Info** - Shows configured credential helper and origin file
+* **Credential Input** - For HTTPS remotes, enter username and token directly
+* **Setup Instructions** - Quick reference for SSH keys and credential managers
+
+#### Worktree Location
+
+* **Default Worktree Path** - Configure where new worktrees are created
+* **Path Validation** - Ensures paths are relative to project root (security)
+* **Quick Presets** - Use recommended path with one click
+
+### Best Practices
+
+1. **Use SSH keys** for the most seamless experience with Coconut
+2. **Create feature branches** instead of committing directly to main/master
+3. **Commit frequently** with descriptive messages
+4. **Push regularly** to back up your work and collaborate with others
+5. **Use worktrees** for parallel work on multiple features
+6. **Configure merge strategy** based on your team's workflow
+7. **Check authentication status** before starting work to avoid errors
+
+### Related Documentation
+
+* [Git Worktrees](https://git-scm.com/docs/git-worktree) - Official git worktree documentation
+* [GitHub SSH Documentation](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
+* [GitLab SSH Documentation](https://docs.gitlab.com/ee/user/ssh.html)
+* [Git Credential Manager](https://github.com/git-ecosystem/git-credential-manager)
+
+### Need Help?
+
+If you're experiencing git-related issues:
+
+1. Check the error message in the Coconut UI
+2. Verify authentication status in **Settings → Git**
+3. Run `git config --list` to review your git configuration
+4. Test operations manually with git CLI commands
+5. Check [GitHub Issues](https://github.com/lovelybunch/coconut/issues) for similar problems
+
 
 ## LLM Setup
 
@@ -2967,6 +3566,61 @@ Note that at the time of writing with Google's Gemini CLI you get 60 request per
 * [Claude Code](https://www.anthropic.com/claude-code)
 * [Gemini CLI](https://cloud.google.com/gemini/docs/codeassist/gemini-cli)
 * [OpenAI Codex](https://openai.com/codex/)
+
+
+## Schedule Autonomous Jobs
+
+Coconut ships with a file-first job scheduler that can run Claude, Gemini, or Code CLI agents on an automated cadence. Jobs live in `.nut/jobs/`, so they version with the rest of your project.
+
+### Prerequisites
+
+* Install the CLI you want to run (`claude`, `gemini`, or `codex`) and make sure it is on your `PATH`.
+* Launch `nut serve` (or the API package) so the scheduler boots and watches `.nut/jobs/`.
+
+### Creating or Editing Jobs
+
+1. Open the **Schedule** page in the Coconut UI sidebar.
+2. Click **New Scheduled Job** (or **Edit** beside an existing job).
+3. Provide:
+   * **Prompt** – the instruction the agent should run autonomously.
+   * **Model** – `Claude`, `Gemini`, or `Code`. The CLI dropdown mirrors the Configure Coding Agent flow.
+   * **Cadence** – select days of the week, an hourly interval (minimum one hour), and optional anchor hour.
+   * Toggle **Start active** if you want the job to begin immediately.
+4. Save. The job is persisted to `.nut/jobs/<id>.md` and scheduled immediately.
+
+The UI shows the most recent run inline and exposes the full history in a modal so you can review summaries without leaving the page. Tags defined in frontmatter render as chips for quick filtering.
+
+### Reliability & Safety
+
+* **CLI guardrails** – Coconut validates the chosen CLI binary with `command -v` before launching a run. Missing binaries result in a clear failure state instead of a crash.
+* **Timeouts** – Runs default to a 30 minute maximum. You can override the limit with `COCONUT_JOB_MAX_RUNTIME_MS` if you need longer tasks.
+* **Backlog catch-up** – If Coconut restarts after a scheduled window passes, the scheduler immediately executes the missed job once and recalculates the next run.
+* **Frontmatter normalization** – Interval schedules are normalized (hours, sorted days, anchor hour) so Markdown diffs stay readable and API payloads remain valid.
+
+### Logs & Artifacts
+
+Each run streams stdout/stderr to `.nut/jobs/logs/<jobId>/<runId>.log`. Summaries are also stored in the job’s Markdown frontmatter (latest 50 entries) for quick reference.
+
+### API Endpoints
+
+| Method   | Path                   | Description                                             |
+| -------- | ---------------------- | ------------------------------------------------------- |
+| `GET`    | `/api/v1/jobs`         | List scheduled jobs.                                    |
+| `POST`   | `/api/v1/jobs`         | Create a job.                                           |
+| `PATCH`  | `/api/v1/jobs/:id`     | Update an existing job (interval schedules via UI).     |
+| `DELETE` | `/api/v1/jobs/:id`     | Remove a job.                                           |
+| `POST`   | `/api/v1/jobs/:id/run` | Trigger a manual run.                                   |
+| `GET`    | `/api/v1/jobs/status`  | Inspect scheduler health, next runs, and active timers. |
+
+> Cron schedules can still be authored manually in `.nut/jobs/<id>.md`; the UI currently supports interval-based jobs.
+
+### Troubleshooting
+
+* **Missing CLI binary** – Install the requested CLI globally and confirm `command -v claude` (or `gemini`, `codex`) resolves.
+* **Job stuck running** – Check the per-run log in `.nut/jobs/logs/<jobId>/`. Long-running jobs terminate automatically after the configured timeout.
+* **No runs after restart** – Ensure `nut serve` is running from the repo root so the scheduler can locate `.nut/`. The `/api/v1/jobs/status` endpoint is useful for verifying timers are active.
+
+With these guardrails, Coconut’s scheduler gives you a safe, repeatable way to automate documentation updates, evidence gathering, or any other repetitive agent task.
 
 
 ## Symlinks
@@ -3155,7 +3809,7 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 * Updates AI Assistant to be clearer in terms of providing context, etc.
 
 
-## v1.0.57 - Nutty Nuts
+## v1.0.57 - Nutty Coconuts
 
 ### Features
 
@@ -3164,6 +3818,81 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 ### Fixes
 
 * Various UI / UX tweaks
+* Fixes `--no-open` flag when using `nut serve` that prevents it from automatically opening the browser
+
+
+## v1.0.58 - Strawberry Coconut Bursts
+
+### Features
+
+* Adds a heartbeat to the terminal sessions to decrease the chance of timeouts
+* Adds streaming support to the AI Assistant
+* Updates "Action" buttons that automatically enable the relevant MCP tool
+* Adds Scheduling Tool (beta)
+* Ability to type ahead (using the "@") to add context in the chat
+* Adds streaming responses in the chat
+
+### Fixes
+
+* Various UI / UX tweaks
+* Fixes `--no-open` flag when using `nut serve` that prevents it from automatically opening the browser
+
+
+## v1.0.59 - Triple Chocolate Coconut Delight
+
+### Features
+
+* Adds ability to authenticate with a remote via the Git screen (and updates Git settings).
+* Improved Git management (branch handling, committing changes, etc)
+
+### Fixes
+
+* Fixes an issue with the UI freezing when running `git push` (via UI) if not authenticated with `git` in the underlying container / host.
+
+
+## v1.0.60 - Quadruple Chocolate Coconut Delight
+
+### Features
+
+* Adds add git mamangement functionality
+
+### Fixes
+
+* Performance fixes
+
+
+## v1.0.61 - Coconut-coladas
+
+### Features
+
+* New utilities section
+* Adds activity badges to left side bar
+
+### Fixes
+
+* Performance fixes
+
+
+## v1.0.62 - Island Cookies
+
+### Features
+
+* Agents are now first-class. Details to follow on what that actually means 🥥
+
+### Fixes
+
+* Fixes flicker / loss of focus on terminals
+
+
+## v1.0.63 - Coconut Dip
+
+### Features
+
+* Adds simple toolbar to the bottom of the terminal screen
+
+### Fixes
+
+* NA
 
 
 ## Create a proposal

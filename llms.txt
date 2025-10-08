@@ -5,16 +5,18 @@
 ## Docs
 
 - [GAIT: Agent-Native Source Control Management System](/GAIT_PRODUCT_SPEC): GAIT (Git-Adjacent Intent Tracking) is a revolutionary source control management system designed for the era of agentic engineering and multi-role collaboration. Unlike traditional VCS that focuses on line-by-line changes, GAIT treats intent, plans, experiments, and product operations as first-class citizens alongside code.
-- [Agents & Registry](/agents): multiple places / types
+- [Agents & Registry](/agents): Agents capture reusable AI personas that can be invoked from the CLI, terminal sessions, and the autonomous job scheduler. Each agent is backed by a markdown document in `.nut/agents/` with YAML frontmatter describing its capabilities, color, and the MCP servers (tools) it can access.
 - [API Reference](/api): Complete reference for all Coconut API endpoints. All endpoints follow RESTful conventions and return JSON responses with consistent error handling.
 - [Authentication](/authentication): Coconut includes an optional, file-based authentication system for team deployments. Authentication is **disabled by default** and completely opt-in.
 - [CLI (aka ](/cli): From the root of your project where you want to setup your `.nut`.
 - [Contributing](/contributing): For local development with hot reload across all packages:
 - [Devcontainer Setup](/devcontainers): [Devcontainers](https://containers.dev) are a feature of VS Code, Cursor, and other supported IDEs that enable you to create a consistent and secure development environment using containers. They run in an isolated environment, making them particularly well-suited for coding agents and AI-powered development tools such as [Claude Code](https://www.anthropic.com/claude-code), Google [Gemini CLI](https://cloud.google.com/gemini/docs/codeassist/gemini-cli), or OpenAI's [Codex](https://github.com/openai/codex).
 - [Getting started](/getting-started): Node.js 18+
+- [Git Management](/git-management): Coconut provides comprehensive git operations through an integrated UI and API, enabling you to manage branches, commits, worktrees, and remote synchronization without leaving your development environment.
 - [LLM Setup](/llm-setup): Coconut includes an AIAssistant that requires API keys from supported providers. Configure them globally after installation:
 - [MCP Tools](/mcp): The AI Assistant can call MCP tools during a chat to perform actions such as listing and creating Change Proposals. This page summarizes what’s available and how to use it.
 - [Models](/models): ChatGPT 4o
+- [Schedule Autonomous Jobs](/scheduler): Coconut ships with a file-first job scheduler that can run Claude, Gemini, or Code CLI agents on an automated cadence. Jobs live in `.nut/jobs/`, so they version with the rest of your project.
 - [Symlinks](/symlinks): Symlinks allow you to present paths from your project's `.nut` to other areas of either the project or filesystem to allow them to be picked up by IDEs or coding agents.
 - [v1.0.47 - Tropical Moonbars](/changelog/v1.0.47): Adds feature template to new proposal page
 - [v1.0.48 - Coconut Dipping Dots](/changelog/v1.0.48): Terminals now remember and show recent output after a page refresh,
@@ -26,7 +28,13 @@ with improved text display reliability
 - [v1.0.54 - Pandan Coconut Fudge](/changelog/v1.0.54): NA
 - [v1.0.55 - Coconut Fudge Sunday](/changelog/v1.0.55): NA
 - [v1.0.56 - Coconut Venus Tarts](/changelog/v1.0.56): NA
-- [v1.0.57 - Nutty Nuts](/changelog/v1.0.57): Adds authentication to CLI and Web
+- [v1.0.57 - Nutty Coconuts](/changelog/v1.0.57): Adds authentication to CLI and Web
+- [v1.0.58 - Strawberry Coconut Bursts](/changelog/v1.0.58): Adds a heartbeat to the terminal sessions to decrease the chance of timeouts
+- [v1.0.59 - Triple Chocolate Coconut Delight](/changelog/v1.0.59): Adds ability to authenticate with a remote via the Git screen (and updates Git settings).
+- [v1.0.60 - Quadruple Chocolate Coconut Delight](/changelog/v1.0.60): Adds add git mamangement functionality
+- [v1.0.61 - Coconut-coladas](/changelog/v1.0.61): New utilities section
+- [v1.0.62 - Island Cookies](/changelog/v1.0.62): Agents are now first-class. Details to follow on what that actually means 🥥
+- [v1.0.63 - Coconut Dip](/changelog/v1.0.63): Adds simple toolbar to the bottom of the terminal screen
 - [Create a proposal](/how-to/create-a-proposal): ...
 - [How to configure and start a coding agent](/how-to/start-a-coding-agent): ...
 - [How to use a Vercel template](/how-to/use-a-vercel-template): Go go [https://vercel.com/templates](https://vercel.com/templates) and select a template (e.g. [https://github.com/lovelybunch/template-next-blog](https://github.com/lovelybunch/template-next-blog))
