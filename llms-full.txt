@@ -3889,6 +3889,7 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 ### Features
 
 * Adds simple toolbar to the bottom of the terminal screen
+* Visual tweaks to Coding Agent configuration screen
 
 ### Fixes
 
