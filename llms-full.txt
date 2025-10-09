@@ -1383,6 +1383,18 @@ You are a QA specialist...
 
 Historically, tools were saved as comma-delimited strings. The backend now normalises old documents into arrays when they are read or rewritten, so downstream consumers always receive `string[]` metadata.
 
+### Import Agents from the Coconut Registry
+
+Need a starting point quickly? The Agents page includes a **Registry** button (next to **Create New**) that connects directly to `registry.coconut.dev`.
+
+1. Click **Registry** to open the in-app browser.
+2. Use the search bar or tag badges to find a template that fits your workflow.
+3. Selecting a card loads a preview built from the registry payload—tools, focus areas, and the full Markdown body are all visible in a scrollable panel.
+4. Click **Import Agent** to download the definition. Coconut writes the file to `.nut/agents/` via the existing `/api/v1/agents` endpoint.
+5. The Agents page refreshes immediately so the imported entry appears without reloading.
+
+Imported agents follow the same frontmatter schema documented in `.nut/.schema/agent.schema.md`, so they are ready to edit, schedule, or launch just like a locally-authored profile.
+
 ### Editing an Agent
 
 1. Click any agent card to view its details, then click the **Edit** button in the top right
@@ -2920,8 +2932,29 @@ Install the various build dependencies to install `node-pty` (and `git`)
 
 ```
 sudo apt install -y build-essential python3 make g++ git
-npm install node-pty
+npm install -g node-pty
 ```
+
+```
+npm install -g coconuts
+```
+
+```
+nut init
+```
+
+```
+nut auth init
+? Admin email address: you@company.com
+? Admin name: Admin
+? Enable authentication now? Yes
+```
+
+```
+nohup nut serve --host=0.0.0.0 --port=80 --no-open > /tmp/nut.log 2>&1 & disown
+```
+
+#### Upgrade Quirk
 
 
 ## Git Management

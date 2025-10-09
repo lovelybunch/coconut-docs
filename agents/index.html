@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="/initializeTheme.iife.js"></script><title>Agents &amp; Registry – 🥥 Coconut Docs</title><meta property="og:type" content="website"/><meta property="og:title" content="Agents &amp; Registry"/><meta name="twitter:card" content="summary_large_image"/>
-    <script type="module" crossorigin src="/assets/index-nbFicYJw.js"></script>
+    <script type="module" crossorigin src="/assets/index-BPDTQFZi.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/style-Cs3UkTB6.css">
   </head>
   <body>
@@ -56,6 +56,16 @@
 <span class="line vocs_Span"><span style="color:#6F42C1;--shiki-dark:#6CB6FF" class="vocs_Span">---</span></span>
 <span class="line vocs_Span"><span style="color:#032F62;--shiki-dark:#96D0FF" class="vocs_Span">You are a QA specialist...</span></span></code></pre></div></div>
 <p class="vocs_Paragraph">Historically, tools were saved as comma-delimited strings. The backend now normalises old documents into arrays when they are read or rewritten, so downstream consumers always receive <code class="vocs_Code">string[]</code> metadata.</p>
+<h2 class="vocs_H2 vocs_Heading"><div id="import-agents-from-the-coconut-registry" class="vocs_Heading_slugTarget"></div>Import Agents from the Coconut Registry<a class="vocs_Anchor vocs_Autolink" aria-hidden="true" tabindex="-1" href="/agents#import-agents-from-the-coconut-registry" data-discover="true"><div data-autolink-icon="true" class="vocs_Div vocs_AutolinkIcon" style="--vocs_AutolinkIcon_iconUrl:url(/.vocs/icons/link.svg)"></div></a></h2>
+<p class="vocs_Paragraph">Need a starting point quickly? The Agents page includes a <strong class="vocs_Strong">Registry</strong> button (next to <strong class="vocs_Strong">Create New</strong>) that connects directly to <code class="vocs_Code">registry.coconut.dev</code>.</p>
+<ol class="vocs_List vocs_List_ordered">
+<li class="vocs_ListItem">Click <strong class="vocs_Strong">Registry</strong> to open the in-app browser.</li>
+<li class="vocs_ListItem">Use the search bar or tag badges to find a template that fits your workflow.</li>
+<li class="vocs_ListItem">Selecting a card loads a preview built from the registry payload—tools, focus areas, and the full Markdown body are all visible in a scrollable panel.</li>
+<li class="vocs_ListItem">Click <strong class="vocs_Strong">Import Agent</strong> to download the definition. Coconut writes the file to <code class="vocs_Code">.nut/agents/</code> via the existing <code class="vocs_Code">/api/v1/agents</code> endpoint.</li>
+<li class="vocs_ListItem">The Agents page refreshes immediately so the imported entry appears without reloading.</li>
+</ol>
+<p class="vocs_Paragraph">Imported agents follow the same frontmatter schema documented in <code class="vocs_Code">.nut/.schema/agent.schema.md</code>, so they are ready to edit, schedule, or launch just like a locally-authored profile.</p>
 <h2 class="vocs_H2 vocs_Heading"><div id="editing-an-agent" class="vocs_Heading_slugTarget"></div>Editing an Agent<a class="vocs_Anchor vocs_Autolink" aria-hidden="true" tabindex="-1" href="/agents#editing-an-agent" data-discover="true"><div data-autolink-icon="true" class="vocs_Div vocs_AutolinkIcon" style="--vocs_AutolinkIcon_iconUrl:url(/.vocs/icons/link.svg)"></div></a></h2>
 <ol class="vocs_List vocs_List_ordered">
 <li class="vocs_ListItem">Click any agent card to view its details, then click the <strong class="vocs_Strong">Edit</strong> button in the top right</li>
