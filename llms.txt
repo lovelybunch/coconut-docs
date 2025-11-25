@@ -18,6 +18,10 @@
 - [Models](/models): ChatGPT 4o
 - [Schedule Autonomous Jobs](/scheduler): Coconut ships with a file-first job scheduler that can run Claude, Gemini, or Code CLI agents on an automated cadence. Jobs live in `.nut/jobs/`, so they version with the rest of your project.
 - [Symlinks](/symlinks): Symlinks allow you to present paths from your project's `.nut` to other areas of either the project or filesystem to allow them to be picked up by IDEs or coding agents.
+- [Terminal](/terminal): Coconut's web-based terminal lets you run commands directly in your browser. It's perfect for development tasks like starting servers, running tests, and managing your project files.
+- [Create a proposal](/how-to/create-a-proposal): ...
+- [How to configure and start a coding agent](/how-to/start-a-coding-agent): ...
+- [How to use a Vercel template](/how-to/use-a-vercel-template): Go go [https://vercel.com/templates](https://vercel.com/templates) and select a template (e.g. [https://github.com/lovelybunch/template-next-blog](https://github.com/lovelybunch/template-next-blog))
 - [v1.0.47 - Tropical Moonbars](/changelog/v1.0.47): Adds feature template to new proposal page
 - [v1.0.48 - Coconut Dipping Dots](/changelog/v1.0.48): Terminals now remember and show recent output after a page refresh,
 with improved text display reliability
@@ -35,6 +39,8 @@ with improved text display reliability
 - [v1.0.61 - Coconut-coladas](/changelog/v1.0.61): New utilities section
 - [v1.0.62 - Island Cookies](/changelog/v1.0.62): Agents are now first-class. Details to follow on what that actually means 🥥
 - [v1.0.63 - Coconut Dip](/changelog/v1.0.63): Adds simple toolbar to the bottom of the terminal screen
-- [Create a proposal](/how-to/create-a-proposal): ...
-- [How to configure and start a coding agent](/how-to/start-a-coding-agent): ...
-- [How to use a Vercel template](/how-to/use-a-vercel-template): Go go [https://vercel.com/templates](https://vercel.com/templates) and select a template (e.g. [https://github.com/lovelybunch/template-next-blog](https://github.com/lovelybunch/template-next-blog))
+- [v1.0.64 - Coconut Dip](/changelog/v1.0.64): Adds Agent and Knowledge registry integration
+- [v1.0.65 - Frosty Nuts](/changelog/v1.0.65): Github App integration
+- [v1.0.67 - Glazed Coco](/changelog/v1.0.67): Logging (details to follow)
+- [v1.0.68 - Fixin' Nuts](/changelog/v1.0.68): NA
+- [v1.0.69 - Coco Swirls](/changelog/v1.0.69): Adds A2A Identity Card

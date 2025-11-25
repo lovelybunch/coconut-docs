@@ -2042,15 +2042,17 @@ PUT /api/v1/chats/:id
 DELETE /api/v1/chats/:id
 ```
 
-#### Configuration API
+#### Version API
 
-Access GAIT configuration from `.gait/config.json`.
+Get the current version of Coconut. Requires authentication.
 
-##### Get Configuration
+##### Get Version
 
 ```http
-GET /api/v1/config
+GET /api/v1/version
 ```
+
+**Authentication:** Required (session cookie, Bearer token, or API key)
 
 **Response:**
 
@@ -2058,14 +2060,161 @@ GET /api/v1/config
 {
   "success": true,
   "data": {
-    "version": "1.0",
-    "features": {
-      "ai": true,
-      "terminal": true
+    "version": "1.0.69-alpha.14",
+    "name": "gait",
+    "description": "Coconut - Agentic Development Environment"
+  }
+}
+```
+
+**Example:**
+
+```bash
+# With session cookie
+curl http://localhost:3001/api/v1/version \
+  -H "Cookie: nut-session=YOUR_SESSION_TOKEN"
+
+# With API key
+curl http://localhost:3001/api/v1/version \
+  -H "X-API-Key: YOUR_API_KEY"
+
+# With Bearer token
+curl http://localhost:3001/api/v1/version \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Error Response (Unauthorized):**
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Authentication required"
+  }
+}
+```
+
+#### Configuration API
+
+Access and update Coconut configuration from `.nut/config.json` (project config) or global configuration.
+
+##### Get Configuration
+
+```http
+GET /api/v1/config
+GET /api/v1/config?type=global
+```
+
+**Query Parameters:**
+
+* `type` (string, optional): `global` for global CLI config (API keys), omit for project config
+
+**Response (Project Config):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "coconut": {
+      "id": "c147e7c2-0947-45b5-9ba4-fc603f355259",
+      "firstName": "Kevin",
+      "lastName": "Bluer",
+      "email": "kevin@bluer.com",
+      "role": "developer",
+      "roleDescription": "Writes code, implements features, fixes bugs"
+    },
+    "version": "1.0.0",
+    "repository": {
+      "name": "Coconut",
+      "description": "Come one, come all..."
+    },
+    "policies": {
+      "requireApproval": true,
+      "minReviewers": 1
     }
   }
 }
 ```
+
+**Response (Global Config):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "apiKeys": {
+      "openrouter": "sk-or-v1-...",
+      "anthropic": "sk-ant-..."
+    },
+    "defaults": {
+      "model": "openai/gpt-4o",
+      "endpoint": ""
+    }
+  }
+}
+```
+
+##### Update Configuration
+
+```http
+PUT /api/v1/config
+PUT /api/v1/config?type=global
+```
+
+**Query Parameters:**
+
+* `type` (string, optional): `global` for global CLI config, omit for project config
+
+**Request Body (Project Config - Coconut Profile):**
+
+```json
+{
+  "coconut": {
+    "id": "c147e7c2-0947-45b5-9ba4-fc603f355259",
+    "firstName": "Kevin",
+    "lastName": "Bluer",
+    "email": "kevin@bluer.com",
+    "role": "developer",
+    "roleDescription": "Writes code, implements features, fixes bugs"
+  }
+}
+```
+
+**Note:** All fields in the `coconut` object are optional. Only provided fields will be updated; other config fields remain unchanged. If `id` is not provided, any existing `coconut.id` will be preserved.
+
+**Request Body (Global Config):**
+
+```json
+{
+  "apiKeys": {
+    "openrouter": "sk-or-v1-...",
+    "anthropic": "sk-ant-..."
+  },
+  "defaults": {
+    "model": "openai/gpt-4o"
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Project configuration updated successfully",
+  "data": { /* Updated config */ }
+}
+```
+
+**Field Descriptions (Coconut Profile):**
+
+* `coconut.id` (string, optional): Coconut instance ID (UUID format)
+* `coconut.firstName` (string, optional): First name
+* `coconut.lastName` (string, optional): Last name
+* `coconut.email` (string, optional): Email address
+* `coconut.role` (string, optional): Role ID (`developer`, `designer`, `product-manager`, `other`)
+* `coconut.roleDescription` (string, optional): Role description (auto-populated from role if not provided)
 
 #### MCP (Model Context Protocol) API
 
@@ -2144,12 +2293,39 @@ Returns the content of `.gait/context/project.md`.
 
 #### User Settings API
 
-Manage user preferences and settings.
+Manage user preferences and settings stored in `~/.gait/user-settings.json`.
 
 ##### Get User Settings
 
 ```http
 GET /api/v1/user/settings
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "profile": {
+      "firstName": "Kevin",
+      "lastName": "Bluer",
+      "email": "kevin@bluer.com",
+      "role": "developer"
+    },
+    "preferences": {
+      "theme": "system",
+      "defaultEditor": "cursor",
+      "terminalShell": "bash",
+      "autoSaveInterval": 5000,
+      "notifications": {
+        "email": true,
+        "desktop": true,
+        "slack": false
+      }
+    }
+  }
+}
 ```
 
 ##### Update User Settings
@@ -2158,10 +2334,426 @@ GET /api/v1/user/settings
 PUT /api/v1/user/settings
 ```
 
+**Request Body:**
+
+```json
+{
+  "profile": {
+    "firstName": "Kevin",
+    "lastName": "Bluer",
+    "email": "kevin@bluer.com",
+    "role": "developer"
+  },
+  "preferences": {
+    "theme": "dark",
+    "defaultEditor": "cursor",
+    "terminalShell": "zsh"
+  },
+  "coconut": {
+    "id": "c147e7c2-0947-45b5-9ba4-fc603f355259"
+  }
+}
+```
+
+**Field Descriptions:**
+
+* `profile` (object, optional): User profile information (partial updates supported)
+  * `profile.firstName` (string, optional): User's first name
+  * `profile.lastName` (string, optional): User's last name
+  * `profile.email` (string, optional): User's email address
+  * `profile.role` (string, optional): User role (`developer`, `designer`, `product-manager`, `other`)
+  * `profile.roleDescription` (string, optional): Role description
+* `preferences` (object, optional): User preferences (partial updates supported)
+  * `preferences.theme` (string, optional): UI theme (`light`, `dark`, `coconut`, `system`)
+  * `preferences.defaultEditor` (string, optional): Default code editor
+  * `preferences.terminalShell` (string, optional): Terminal shell preference
+  * `preferences.autoSaveInterval` (number, optional): Auto-save interval in milliseconds
+  * `preferences.notifications` (object, optional): Notification preferences
+* `coconut` (object, optional): Coconut-specific settings
+  * `coconut.id` (string, optional): Coconut instance ID (updates `.nut/config.json`)
+
+**Note:** If `coconut.id` is provided, it will be saved to `.nut/config.json` in addition to user settings. This field is typically set programmatically and not editable from the settings UI.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "profile": { /* Updated profile */ },
+    "preferences": { /* Updated preferences */ }
+  }
+}
+```
+
 ##### Get User Info
 
 ```http
 GET /api/v1/user
+```
+
+#### Jobs API
+
+Manage scheduled jobs and retrieve job run information.
+
+##### List Jobs
+
+```http
+GET /api/v1/jobs
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "job-ce08e3c6-1e34-42ad-a8f8-4dc241350cae",
+      "name": "Daily Sync",
+      "description": "Syncs data daily",
+      "prompt": "Run the daily sync task",
+      "model": "claude",
+      "status": "active",
+      "schedule": {
+        "type": "interval",
+        "hours": 24,
+        "daysOfWeek": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+      },
+      "metadata": {
+        "createdAt": "2024-08-16T10:30:00Z",
+        "updatedAt": "2024-08-16T14:45:00Z",
+        "lastRunAt": "2024-08-17T10:00:00Z",
+        "nextRunAt": "2024-08-18T10:00:00Z"
+      },
+      "runs": []
+    }
+  ]
+}
+```
+
+##### Create Job
+
+```http
+POST /api/v1/jobs
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "Job Name",
+  "description": "Job description",
+  "prompt": "Instructions for the job",
+  "model": "claude",
+  "status": "active",
+  "schedule": {
+    "type": "interval",
+    "hours": 6,
+    "daysOfWeek": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+  },
+  "tags": ["automation"],
+  "contextPaths": [".nut/context/project.md"],
+  "agentId": "my-agent.md",
+  "mcpServers": ["server-name"]
+}
+```
+
+##### Get Job
+
+```http
+GET /api/v1/jobs/:id
+```
+
+**Response:** Returns the complete job object including run history (up to 50 most recent runs).
+
+##### Update Job
+
+```http
+PATCH /api/v1/jobs/:id
+```
+
+**Request Body:** Partial job object with fields to update.
+
+##### Delete Job
+
+```http
+DELETE /api/v1/jobs/:id
+```
+
+##### Run Job Manually
+
+```http
+POST /api/v1/jobs/:id/run
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "jobId": "job-ce08e3c6-1e34-42ad-a8f8-4dc241350cae",
+    "run": {
+      "id": "run-50f749ed-1f75-42bf-be2d-7cee540a2447",
+      "status": "running"
+    }
+  }
+}
+```
+
+##### Get Job Run Details
+
+```http
+GET /api/v1/jobs/:jobId/runs/:runId
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "run-50f749ed-1f75-42bf-be2d-7cee540a2447",
+    "jobId": "job-ce08e3c6-1e34-42ad-a8f8-4dc241350cae",
+    "trigger": "manual",
+    "status": "succeeded",
+    "startedAt": "2024-08-17T10:00:00Z",
+    "finishedAt": "2024-08-17T10:02:23Z",
+    "outputPath": ".nut/jobs/logs/job-ce08e3c6-1e34-42ad-a8f8-4dc241350cae/run-50f749ed-1f75-42bf-be2d-7cee540a2447.log",
+    "summary": "Job completed successfully...",
+    "cliCommand": "claude 'Run this scheduled job...'"
+  }
+}
+```
+
+##### Get Job Run Logs
+
+```http
+GET /api/v1/jobs/:jobId/runs/:runId/log
+```
+
+**Response:** Returns the raw log file contents as plain text.
+
+##### Get Job Status
+
+```http
+GET /api/v1/jobs/status
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "activeJobs": 5,
+    "totalRuns": 142,
+    "lastRunAt": "2024-08-17T10:00:00Z"
+  }
+}
+```
+
+#### Git API
+
+Manage git operations and retrieve commit information.
+
+##### Get Repository Status
+
+```http
+GET /api/v1/git/status
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "branch": "main",
+    "ahead": 2,
+    "behind": 0,
+    "upstream": "origin/main",
+    "head": "7bc9ceba67796b6737a0753ff6c4e57ab9f31573",
+    "changes": [
+      {
+        "path": "src/app.ts",
+        "status": "M"
+      }
+    ]
+  }
+}
+```
+
+##### List Branches
+
+```http
+GET /api/v1/git/branches
+```
+
+##### Create Branch
+
+```http
+POST /api/v1/git/branches
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "feature-branch",
+  "from": "main"
+}
+```
+
+##### Switch Branch
+
+```http
+POST /api/v1/git/switch
+```
+
+**Request Body:**
+
+```json
+{
+  "branch": "feature-branch"
+}
+```
+
+##### Create Commit
+
+```http
+POST /api/v1/git/commits
+```
+
+**Request Body:**
+
+```json
+{
+  "message": "feat: add new feature",
+  "files": ["src/app.ts", "src/utils.ts"]
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "message": "feat: add new feature",
+    "files": ["src/app.ts", "src/utils.ts"],
+    "commitHash": "9fca5daa720820ca199f124e9e94899028f649f8"
+  }
+}
+```
+
+##### Get Commit Details
+
+```http
+GET /api/v1/git/commits/:sha
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "sha": "9fca5daa720820ca199f124e9e94899028f649f8",
+    "message": "feat: add new feature",
+    "author": {
+      "name": "John Doe",
+      "email": "john@example.com",
+      "date": "2024-08-17T10:30:00-06:00"
+    },
+    "committer": {
+      "name": "John Doe",
+      "email": "john@example.com",
+      "date": "2024-08-17T10:30:00-06:00"
+    },
+    "branch": "main",
+    "filesChanged": 8,
+    "insertions": 354,
+    "deletions": 3,
+    "files": [
+      {
+        "path": "packages/api/src/routes/api.ts",
+        "status": "M",
+        "insertions": 300,
+        "deletions": 2
+      },
+      {
+        "path": "README.md",
+        "status": "M",
+        "insertions": 54,
+        "deletions": 1
+      }
+    ]
+  }
+}
+```
+
+**File Status Codes:**
+
+* `M` = Modified
+* `A` = Added
+* `D` = Deleted
+* `R` = Renamed
+* `C` = Copied
+
+##### Get File Diff from Commit
+
+```http
+GET /api/v1/git/commits/:sha/files/:filepath
+```
+
+**Example:**
+
+```http
+GET /api/v1/git/commits/9fca5daa.../files/packages/api/src/routes/api.ts
+```
+
+**Response:** Returns the git diff for the specified file as plain text.
+
+##### Push Changes
+
+```http
+POST /api/v1/git/push
+```
+
+##### Pull Changes
+
+```http
+POST /api/v1/git/pull
+```
+
+**Request Body (Optional):**
+
+```json
+{
+  "strategy": "rebase"
+}
+```
+
+**Strategies:** `rebase` (default), `merge`, `ff-only`
+
+##### Git Settings
+
+```http
+GET /api/v1/git/settings
+PUT /api/v1/git/settings
+```
+
+##### Worktrees
+
+```http
+GET /api/v1/git/worktrees
+POST /api/v1/git/worktrees
+DELETE /api/v1/git/worktrees/:name
+POST /api/v1/git/worktrees/:name/commit
+POST /api/v1/git/worktrees/:name/push
+POST /api/v1/git/worktrees/:name/pull
 ```
 
 ### Rate Limits
@@ -2225,6 +2817,15 @@ You'll be prompted for:
 * Email address (must be whitelisted before they can register)
 * Full name
 * Role (admin, manager, engineer, designer, product\_manager, viewer)
+
+To skip the prompts and supply details in one go, provide the flags explicitly:
+
+```bash
+nut auth add-user \
+  --email "jordan@example.com" \
+  --name "Jordan Rivers" \
+  --role manager
+```
 
 #### List Users
 
@@ -2756,6 +3357,22 @@ pnpm run release  # Bumps patch version + publishes
 * Bundles frontend with API package
 * Publishes packages in dependency order
 * Provides clear success/failure feedback
+
+#### Alpha Releases
+
+Need a smoke-test build before the final release? Run:
+
+```bash
+pnpm run release:alpha
+```
+
+This will bump versions with an `-alpha.x` suffix and publish every package using the `alpha` npm dist-tag. Re-running the command increments the prerelease number while keeping the same base version. Once the prerelease looks good, finish the rollout with the standard release flow:
+
+```bash
+pnpm run release
+```
+
+The prerelease suffix is removed automatically before publishing the stable build.
 
 #### Release Workflow
 
@@ -3723,6 +4340,192 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 ```
 
 
+## Terminal
+
+Coconut's web-based terminal lets you run commands directly in your browser. It's perfect for development tasks like starting servers, running tests, and managing your project files.
+
+### Why Use the Terminal?
+
+* **Persistent sessions** - Your `npm run dev` keeps running even if you close your browser
+* **No setup required** - Works immediately without any configuration
+* **Always accessible** - Available anywhere you can access your Coconut project
+
+### How to Use
+
+#### Opening a Terminal
+
+Click the "Terminal" tab in your Coconut interface. That's it!
+
+#### Running Commands
+
+Use it just like your regular terminal:
+
+```bash
+# Start your development server
+npm run dev
+
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Use git
+git status
+git add .
+git commit -m "Update feature"
+```
+
+### Common Tasks
+
+#### Development Servers
+
+```bash
+# Start and leave running
+npm run dev
+# or
+yarn dev
+# or  
+python manage.py runserver
+```
+
+Your server stays running even if you close the browser!
+
+#### File Management
+
+```bash
+# Create files and folders
+touch README.md
+mkdir src/components
+
+# Copy and move files
+cp file1.txt file2.txt
+mv oldname.txt newname.txt
+
+# View files
+ls -la
+cat package.json
+```
+
+#### Git Workflow
+
+```bash
+# Check status and add files
+git status
+git add .
+
+# Commit and push
+git commit -m "Add new feature"
+git push origin main
+
+# Pull latest changes
+git pull
+```
+
+### Useful Tips
+
+#### Multiple Sessions
+
+Open multiple terminal tabs to run different commands simultaneously - like one for your dev server and another for git commands.
+
+#### Keyboard Shortcuts
+
+* **Ctrl+C** - Stop the current command
+* **Ctrl+L** - Clear the screen
+* **Up/Down arrows** - Browse previous commands
+* **Tab** - Auto-complete file and folder names
+
+#### Session Persistence
+
+Your terminal sessions stay alive for days, so long-running commands won't get interrupted if you:
+
+* Close your browser
+* Lose internet connection
+* Switch to a different tab
+
+The terminal automatically reconnects when you come back.
+
+### Common Issues
+
+#### Command Won't Stop
+
+Press **Ctrl+C** to stop a running command.
+
+#### Terminal Seems Frozen
+
+Try pressing **Enter** or **Ctrl+C**. If that doesn't work, refresh the page.
+
+#### Connection Lost
+
+The terminal will automatically try to reconnect. If it doesn't work after a few seconds, refresh the page.
+
+#### Can't See My Files
+
+Make sure you're in the right directory:
+
+```bash
+pwd              # Shows current directory
+ls               # Lists files in current directory  
+cd /path/to/project   # Navigate to your project
+```
+
+### Quick Command Reference
+
+| What you want to do | Command                  |
+| ------------------- | ------------------------ |
+| List files          | `ls` or `ls -la`         |
+| Navigate folders    | `cd foldername`          |
+| Go back one folder  | `cd ..`                  |
+| Create file         | `touch filename.txt`     |
+| Create folder       | `mkdir foldername`       |
+| View file contents  | `cat filename.txt`       |
+| Delete file         | `rm filename.txt`        |
+| Copy file           | `cp file1.txt file2.txt` |
+| Check git status    | `git status`             |
+| Install packages    | `npm install`            |
+| Start dev server    | `npm run dev`            |
+
+That's it! The terminal is just like using the command line on your computer, but it runs in your browser and keeps your processes alive.
+
+
+## Create a proposal
+
+...
+
+
+
+
+## How to configure and start a coding agent
+
+...
+
+
+## How to use a Vercel template
+
+### Setup
+
+* Go go [https://vercel.com/templates](https://vercel.com/templates) and select a template (e.g. [https://github.com/lovelybunch/template-next-blog](https://github.com/lovelybunch/template-next-blog))
+* Clone locally and install the dependencies with `npm install`
+* If you're running locally, simply make sure you've got Coconut [installed](https://docs.coconut.dev/getting-started) or run in a [devcontainer](https://docs.coconut.dev/devcontainers) for easier config / safety
+* Initialize your Coconut with `nut init` and start serving `nut serve`
+
+You're now ready to create first change proposal and get it started:
+
+### Use the `nut` CLI
+
+```
+> nut propose "Change the title to be 'Coconut'"
+> nut code cp-001 --autonomous --new-worktree
+```
+
+### Use the Web UI
+
+* Open [http://localhost:3000](http://localhost:3000) (which is the default port that Coconut runs on locally)
+* Navigation to the proposals section and create a proposal
+* From the proposal view click `Prepare Coding Agent`
+* Optional `Configure` (wherein you can choose a coding agent) and click `Start Coding`
+
+
 ## v1.0.47 - Tropical Moonbars
 
 ### Features
@@ -3929,40 +4732,65 @@ curl -X POST http://localhost:3001/api/v1/symlinks \
 * NA
 
 
-## Create a proposal
+## v1.0.64 - Coconut Dip
 
-...
+### Features
+
+* Adds Agent and Knowledge registry integration
+* Rearranges Quick Links on the Dashboard
+* Tweaks sidebar header name, icon, etc
+
+### Fixes
+
+* Improves timeout when running commands on the terminal
+* Resolves potential UI glitch when creating an API key
 
 
+## v1.0.65 - Frosty Nuts
+
+### Features
+
+* Github App integration
+* Improved Git configuration settings
+
+### Fixes
+
+* NA
 
 
-## How to configure and start a coding agent
+## v1.0.67 - Glazed Coco
 
-...
+### Features
+
+* Logging (details to follow)
+
+### Fixes
+
+* Prevent integrated terminal from jumping to top
 
 
-## How to use a Vercel template
+## v1.0.68 - Fixin' Nuts
 
-### Setup
+### Features
 
-* Go go [https://vercel.com/templates](https://vercel.com/templates) and select a template (e.g. [https://github.com/lovelybunch/template-next-blog](https://github.com/lovelybunch/template-next-blog))
-* Clone locally and install the dependencies with `npm install`
-* If you're running locally, simply make sure you've got Coconut [installed](https://docs.coconut.dev/getting-started) or run in a [devcontainer](https://docs.coconut.dev/devcontainers) for easier config / safety
-* Initialize your Coconut with `nut init` and start serving `nut serve`
+* NA
 
-You're now ready to create first change proposal and get it started:
+### Fixes
 
-### Use the `nut` CLI
+* Fixing a build issue
 
-```
-> nut propose "Change the title to be 'Coconut'"
-> nut code cp-001 --autonomous --new-worktree
-```
 
-### Use the Web UI
+## v1.0.69 - Coco Swirls
 
-* Open [http://localhost:3000](http://localhost:3000) (which is the default port that Coconut runs on locally)
-* Navigation to the proposals section and create a proposal
-* From the proposal view click `Prepare Coding Agent`
-* Optional `Configure` (wherein you can choose a coding agent) and click `Start Coding`
+### Features
+
+* Adds A2A Identity Card
+* Settings improvements
+* More comprehensive event logging
+* Adds agent selector to scheduler
+* New job and commit sha endpoints
+
+### Fixes
+
+* Text tweaks to improve UI
 
