@@ -1,0 +1,91 @@
+import{u as r,j as s}from"./index-BdR84zcS.js";const a={title:"Terminal",description:"undefined"};function i(n){const e={a:"a",code:"code",div:"div",h1:"h1",h2:"h2",h3:"h3",header:"header",li:"li",p:"p",pre:"pre",span:"span",strong:"strong",table:"table",tbody:"tbody",td:"td",th:"th",thead:"thead",tr:"tr",ul:"ul",...r(),...n.components};return s.jsxs(s.Fragment,{children:[s.jsx(e.header,{children:s.jsxs(e.h1,{id:"terminal",children:["Terminal",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#terminal",children:s.jsx(e.div,{"data-autolink-icon":!0})})]})}),`
+`,s.jsx(e.p,{children:"Coconut's web-based terminal lets you run commands directly in your browser. It's perfect for development tasks like starting servers, running tests, and managing your project files."}),`
+`,s.jsxs(e.h2,{id:"why-use-the-terminal",children:["Why Use the Terminal?",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#why-use-the-terminal",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsxs(e.ul,{children:[`
+`,s.jsxs(e.li,{children:[s.jsx(e.strong,{children:"Persistent sessions"})," - Your ",s.jsx(e.code,{children:"npm run dev"})," keeps running even if you close your browser"]}),`
+`,s.jsxs(e.li,{children:[s.jsx(e.strong,{children:"No setup required"})," - Works immediately without any configuration"]}),`
+`,s.jsxs(e.li,{children:[s.jsx(e.strong,{children:"Always accessible"})," - Available anywhere you can access your Coconut project"]}),`
+`]}),`
+`,s.jsxs(e.h2,{id:"how-to-use",children:["How to Use",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#how-to-use",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsxs(e.h3,{id:"opening-a-terminal",children:["Opening a Terminal",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#opening-a-terminal",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsx(e.p,{children:`Click the "Terminal" tab in your Coconut interface. That's it!`}),`
+`,s.jsxs(e.h3,{id:"running-commands",children:["Running Commands",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#running-commands",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsx(e.p,{children:"Use it just like your regular terminal:"}),`
+`,s.jsx(s.Fragment,{children:s.jsx(e.pre,{className:"shiki shiki-themes github-light github-dark-dimmed",style:{backgroundColor:"#fff","--shiki-dark-bg":"#22272e",color:"#24292e","--shiki-dark":"#adbac7"},tabIndex:"0",children:s.jsxs(e.code,{children:[s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"# Start your development server"})}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"npm"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" run"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" dev"})]}),`
+`,s.jsx(e.span,{className:"line","data-empty-line":!0,children:" "}),`
+`,s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"# Install dependencies"})}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"npm"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" install"})]}),`
+`,s.jsx(e.span,{className:"line","data-empty-line":!0,children:" "}),`
+`,s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"# Run tests"})}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"npm"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" test"})]}),`
+`,s.jsx(e.span,{className:"line","data-empty-line":!0,children:" "}),`
+`,s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"# Use git"})}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"git"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" status"})]}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"git"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" add"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" ."})]}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"git"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" commit"}),s.jsx(e.span,{style:{color:"#005CC5","--shiki-dark":"#6CB6FF"},children:" -m"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:' "Update feature"'})]})]})})}),`
+`,s.jsxs(e.h2,{id:"common-tasks",children:["Common Tasks",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#common-tasks",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsxs(e.h3,{id:"development-servers",children:["Development Servers",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#development-servers",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsx(s.Fragment,{children:s.jsx(e.pre,{className:"shiki shiki-themes github-light github-dark-dimmed",style:{backgroundColor:"#fff","--shiki-dark-bg":"#22272e",color:"#24292e","--shiki-dark":"#adbac7"},tabIndex:"0",children:s.jsxs(e.code,{children:[s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"# Start and leave running"})}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"npm"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" run"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" dev"})]}),`
+`,s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"# or"})}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"yarn"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" dev"})]}),`
+`,s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"# or  "})}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"python"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" manage.py"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" runserver"})]})]})})}),`
+`,s.jsx(e.p,{children:"Your server stays running even if you close the browser!"}),`
+`,s.jsxs(e.h3,{id:"file-management",children:["File Management",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#file-management",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsx(s.Fragment,{children:s.jsx(e.pre,{className:"shiki shiki-themes github-light github-dark-dimmed",style:{backgroundColor:"#fff","--shiki-dark-bg":"#22272e",color:"#24292e","--shiki-dark":"#adbac7"},tabIndex:"0",children:s.jsxs(e.code,{children:[s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"# Create files and folders"})}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"touch"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" README.md"})]}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"mkdir"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" src/components"})]}),`
+`,s.jsx(e.span,{className:"line","data-empty-line":!0,children:" "}),`
+`,s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"# Copy and move files"})}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"cp"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" file1.txt"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" file2.txt"})]}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"mv"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" oldname.txt"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" newname.txt"})]}),`
+`,s.jsx(e.span,{className:"line","data-empty-line":!0,children:" "}),`
+`,s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"# View files"})}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"ls"}),s.jsx(e.span,{style:{color:"#005CC5","--shiki-dark":"#6CB6FF"},children:" -la"})]}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"cat"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" package.json"})]})]})})}),`
+`,s.jsxs(e.h3,{id:"git-workflow",children:["Git Workflow",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#git-workflow",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsx(s.Fragment,{children:s.jsx(e.pre,{className:"shiki shiki-themes github-light github-dark-dimmed",style:{backgroundColor:"#fff","--shiki-dark-bg":"#22272e",color:"#24292e","--shiki-dark":"#adbac7"},tabIndex:"0",children:s.jsxs(e.code,{children:[s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"# Check status and add files"})}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"git"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" status"})]}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"git"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" add"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" ."})]}),`
+`,s.jsx(e.span,{className:"line","data-empty-line":!0,children:" "}),`
+`,s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"# Commit and push"})}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"git"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" commit"}),s.jsx(e.span,{style:{color:"#005CC5","--shiki-dark":"#6CB6FF"},children:" -m"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:' "Add new feature"'})]}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"git"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" push"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" origin"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" main"})]}),`
+`,s.jsx(e.span,{className:"line","data-empty-line":!0,children:" "}),`
+`,s.jsx(e.span,{className:"line",children:s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"# Pull latest changes"})}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"git"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" pull"})]})]})})}),`
+`,s.jsxs(e.h2,{id:"useful-tips",children:["Useful Tips",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#useful-tips",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsxs(e.h3,{id:"multiple-sessions",children:["Multiple Sessions",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#multiple-sessions",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsx(e.p,{children:"Open multiple terminal tabs to run different commands simultaneously - like one for your dev server and another for git commands."}),`
+`,s.jsxs(e.h3,{id:"keyboard-shortcuts",children:["Keyboard Shortcuts",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#keyboard-shortcuts",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsxs(e.ul,{children:[`
+`,s.jsxs(e.li,{children:[s.jsx(e.strong,{children:"Ctrl+C"})," - Stop the current command"]}),`
+`,s.jsxs(e.li,{children:[s.jsx(e.strong,{children:"Ctrl+L"})," - Clear the screen"]}),`
+`,s.jsxs(e.li,{children:[s.jsx(e.strong,{children:"Up/Down arrows"})," - Browse previous commands"]}),`
+`,s.jsxs(e.li,{children:[s.jsx(e.strong,{children:"Tab"})," - Auto-complete file and folder names"]}),`
+`]}),`
+`,s.jsxs(e.h3,{id:"session-persistence",children:["Session Persistence",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#session-persistence",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsx(e.p,{children:"Your terminal sessions stay alive for days, so long-running commands won't get interrupted if you:"}),`
+`,s.jsxs(e.ul,{children:[`
+`,s.jsx(e.li,{children:"Close your browser"}),`
+`,s.jsx(e.li,{children:"Lose internet connection"}),`
+`,s.jsx(e.li,{children:"Switch to a different tab"}),`
+`]}),`
+`,s.jsx(e.p,{children:"The terminal automatically reconnects when you come back."}),`
+`,s.jsxs(e.h2,{id:"common-issues",children:["Common Issues",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#common-issues",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsxs(e.h3,{id:"command-wont-stop",children:["Command Won't Stop",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#command-wont-stop",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsxs(e.p,{children:["Press ",s.jsx(e.strong,{children:"Ctrl+C"})," to stop a running command."]}),`
+`,s.jsxs(e.h3,{id:"terminal-seems-frozen",children:["Terminal Seems Frozen",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#terminal-seems-frozen",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsxs(e.p,{children:["Try pressing ",s.jsx(e.strong,{children:"Enter"})," or ",s.jsx(e.strong,{children:"Ctrl+C"}),". If that doesn't work, refresh the page."]}),`
+`,s.jsxs(e.h3,{id:"connection-lost",children:["Connection Lost",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#connection-lost",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsx(e.p,{children:"The terminal will automatically try to reconnect. If it doesn't work after a few seconds, refresh the page."}),`
+`,s.jsxs(e.h3,{id:"cant-see-my-files",children:["Can't See My Files",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#cant-see-my-files",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsx(e.p,{children:"Make sure you're in the right directory:"}),`
+`,s.jsx(s.Fragment,{children:s.jsx(e.pre,{className:"shiki shiki-themes github-light github-dark-dimmed",style:{backgroundColor:"#fff","--shiki-dark-bg":"#22272e",color:"#24292e","--shiki-dark":"#adbac7"},tabIndex:"0",children:s.jsxs(e.code,{children:[s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#005CC5","--shiki-dark":"#6CB6FF"},children:"pwd"}),s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"              # Shows current directory"})]}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#6F42C1","--shiki-dark":"#F69D50"},children:"ls"}),s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"               # Lists files in current directory  "})]}),`
+`,s.jsxs(e.span,{className:"line",children:[s.jsx(e.span,{style:{color:"#005CC5","--shiki-dark":"#6CB6FF"},children:"cd"}),s.jsx(e.span,{style:{color:"#032F62","--shiki-dark":"#96D0FF"},children:" /path/to/project"}),s.jsx(e.span,{style:{color:"#6A737D","--shiki-dark":"#768390"},children:"   # Navigate to your project"})]})]})})}),`
+`,s.jsxs(e.h2,{id:"quick-command-reference",children:["Quick Command Reference",s.jsx(e.a,{"aria-hidden":"true",tabIndex:"-1",href:"#quick-command-reference",children:s.jsx(e.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsxs(e.table,{children:[s.jsx(e.thead,{children:s.jsxs(e.tr,{children:[s.jsx(e.th,{children:"What you want to do"}),s.jsx(e.th,{children:"Command"})]})}),s.jsxs(e.tbody,{children:[s.jsxs(e.tr,{children:[s.jsx(e.td,{children:"List files"}),s.jsxs(e.td,{children:[s.jsx(e.code,{children:"ls"})," or ",s.jsx(e.code,{children:"ls -la"})]})]}),s.jsxs(e.tr,{children:[s.jsx(e.td,{children:"Navigate folders"}),s.jsx(e.td,{children:s.jsx(e.code,{children:"cd foldername"})})]}),s.jsxs(e.tr,{children:[s.jsx(e.td,{children:"Go back one folder"}),s.jsx(e.td,{children:s.jsx(e.code,{children:"cd .."})})]}),s.jsxs(e.tr,{children:[s.jsx(e.td,{children:"Create file"}),s.jsx(e.td,{children:s.jsx(e.code,{children:"touch filename.txt"})})]}),s.jsxs(e.tr,{children:[s.jsx(e.td,{children:"Create folder"}),s.jsx(e.td,{children:s.jsx(e.code,{children:"mkdir foldername"})})]}),s.jsxs(e.tr,{children:[s.jsx(e.td,{children:"View file contents"}),s.jsx(e.td,{children:s.jsx(e.code,{children:"cat filename.txt"})})]}),s.jsxs(e.tr,{children:[s.jsx(e.td,{children:"Delete file"}),s.jsx(e.td,{children:s.jsx(e.code,{children:"rm filename.txt"})})]}),s.jsxs(e.tr,{children:[s.jsx(e.td,{children:"Copy file"}),s.jsx(e.td,{children:s.jsx(e.code,{children:"cp file1.txt file2.txt"})})]}),s.jsxs(e.tr,{children:[s.jsx(e.td,{children:"Check git status"}),s.jsx(e.td,{children:s.jsx(e.code,{children:"git status"})})]}),s.jsxs(e.tr,{children:[s.jsx(e.td,{children:"Install packages"}),s.jsx(e.td,{children:s.jsx(e.code,{children:"npm install"})})]}),s.jsxs(e.tr,{children:[s.jsx(e.td,{children:"Start dev server"}),s.jsx(e.td,{children:s.jsx(e.code,{children:"npm run dev"})})]})]})]}),`
+`,s.jsx(e.p,{children:"That's it! The terminal is just like using the command line on your computer, but it runs in your browser and keeps your processes alive."})]})}function d(n={}){const{wrapper:e}={...r(),...n.components};return e?s.jsx(e,{...n,children:s.jsx(i,{...n})}):i(n)}export{d as default,a as frontmatter};

@@ -44,3 +44,4 @@ with improved text display reliability
 - [v1.0.67 - Glazed Coco](/changelog/v1.0.67): Logging (details to follow)
 - [v1.0.68 - Fixin' Nuts](/changelog/v1.0.68): NA
 - [v1.0.69 - Coco Swirls](/changelog/v1.0.69): Adds A2A Identity Card
+- [v1.0.70 - Coco Loco](/changelog/v1.0.70): Adds a non-interactive `nut auth` option

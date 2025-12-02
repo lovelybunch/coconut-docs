@@ -2060,9 +2060,7 @@ GET /api/v1/version
 {
   "success": true,
   "data": {
-    "version": "1.0.69-alpha.14",
-    "name": "gait",
-    "description": "Coconut - Agentic Development Environment"
+    "version": "1.0.69-alpha.15"
   }
 }
 ```
@@ -2290,6 +2288,350 @@ GET /api/v1/context/project
 ```
 
 Returns the content of `.gait/context/project.md`.
+
+#### Identity API
+
+Manage agent card information stored in `.nut/agent-card.json`. The agent card represents the AI agent's identity and capabilities, and is also publicly accessible at `/.well-known/agent-card.json`.
+
+##### Get Agent Card
+
+```http
+GET /api/v1/identity/agent-card
+```
+
+**Authentication:** Required (session cookie, Bearer token, or API key)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "exists": true,
+    "card": {
+      "id": "urn:agent:my-agent",
+      "name": "My AI Agent",
+      "description": "An AI assistant for code review and development",
+      "version": "1.0.0",
+      "url": "https://example.com/api/v1",
+      "documentation": "https://example.com/docs",
+      "protocols": ["a2a_v0.2", "jsonrpc"],
+      "authentication": {
+        "scheme": "api_key",
+        "in": "header",
+        "name": "X-API-Key",
+        "example": "nut_abc123...",
+        "description": "Provide an API key via X-API-Key header"
+      },
+      "capabilities": [
+        {
+          "id": "code-review",
+          "skill": "code-review",
+          "description": "Reviews code for best practices and bugs",
+          "endpoint": "/api/v1/review",
+          "method": "POST",
+          "enabled": true,
+          "inputMimeType": "application/json",
+          "outputMimeType": "application/json"
+        }
+      ],
+      "supportedContentTypes": {
+        "input": ["application/json", "text/plain"],
+        "output": ["application/json", "text/markdown"]
+      },
+      "security": {
+        "transport": "https",
+        "encryption": "TLS 1.3",
+        "notes": "All communications must use TLS 1.3 or higher"
+      },
+      "contact": {
+        "name": "Team Name",
+        "email": "team@example.com"
+      }
+    },
+    "publicPath": "/.well-known/agent-card.json",
+    "storagePath": "/path/to/.nut/agent-card.json",
+    "updatedAt": "2024-08-16T10:30:00Z"
+  }
+}
+```
+
+**Response (No Card Exists):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "exists": false,
+    "card": null,
+    "publicPath": "/.well-known/agent-card.json",
+    "storagePath": "/path/to/.nut/agent-card.json"
+  }
+}
+```
+
+**Error Response (Unauthorized):**
+
+```json
+{
+  "success": false,
+  "error": "Authentication required"
+}
+```
+
+**Error Response (GAIT Directory Not Found):**
+
+```json
+{
+  "success": false,
+  "error": "GAIT directory not found"
+}
+```
+
+**Error Response (Invalid JSON):**
+
+```json
+{
+  "success": false,
+  "error": "Agent card JSON is invalid"
+}
+```
+
+##### Update Agent Card
+
+```http
+PUT /api/v1/identity/agent-card
+```
+
+**Authentication:** Required (session cookie, Bearer token, or API key)
+
+**Request Body:**
+
+```json
+{
+  "card": {
+    "id": "urn:agent:my-agent",
+    "name": "My AI Agent",
+    "description": "An AI assistant for code review and development",
+    "version": "1.0.0",
+    "url": "https://example.com/api/v1",
+    "documentation": "https://example.com/docs",
+    "protocols": ["a2a_v0.2", "jsonrpc"],
+    "authentication": {
+      "scheme": "api_key",
+      "in": "header",
+      "name": "X-API-Key",
+      "example": "nut_abc123...",
+      "description": "Provide an API key via X-API-Key header"
+    },
+    "capabilities": [
+      {
+        "id": "code-review",
+        "skill": "code-review",
+        "description": "Reviews code for best practices and bugs",
+        "endpoint": "/api/v1/review",
+        "method": "POST",
+        "enabled": true,
+        "inputMimeType": "application/json",
+        "inputSchema": "{ \"type\": \"object\", \"properties\": {...} }",
+        "outputMimeType": "application/json",
+        "outputSchema": "{ \"type\": \"object\", \"properties\": {...} }"
+      }
+    ],
+    "supportedContentTypes": {
+      "input": ["application/json", "text/plain"],
+      "output": ["application/json", "text/markdown"]
+    },
+    "security": {
+      "transport": "https",
+      "encryption": "TLS 1.3",
+      "notes": "All communications must use TLS 1.3 or higher"
+    },
+    "contact": {
+      "name": "Team Name",
+      "email": "team@example.com"
+    }
+  }
+}
+```
+
+**Note:** The `card` field must be a valid JSON object. All fields are optional except for the card itself. The structure follows the Agent-to-Agent (A2A) protocol specification.
+
+**Field Descriptions:**
+
+* `id` (string, optional): Unique identifier for the agent (URN format recommended)
+* `name` (string, optional): Human-readable name of the agent
+* `description` (string, optional): Brief description of the agent's purpose
+* `version` (string, optional): Semantic version of the agent
+* `url` (string, optional): Base URL for the agent's API
+* `documentation` (string, optional): URL to agent documentation
+* `protocols` (array, optional): Supported protocols (e.g., `a2a_v0.2`, `jsonrpc`)
+* `authentication` (object, optional): Authentication configuration
+  * `scheme` (string): Authentication scheme (e.g., `api_key`, `bearer`, `oauth2`)
+  * `in` (string): Where to include the credential (e.g., `header`, `query`)
+  * `name` (string): Name of the credential field
+  * `example` (string, optional): Example credential value
+  * `description` (string, optional): Authentication instructions
+* `capabilities` (array, optional): List of agent capabilities
+  * `id` (string): Unique capability identifier
+  * `skill` (string): Skill name
+  * `description` (string): Capability description
+  * `endpoint` (string): API endpoint for this capability
+  * `method` (string): HTTP method (e.g., `POST`, `GET`)
+  * `enabled` (boolean): Whether the capability is currently enabled
+  * `inputMimeType` (string, optional): Expected input content type
+  * `inputSchema` (string, optional): JSON schema for input validation
+  * `outputMimeType` (string, optional): Output content type
+  * `outputSchema` (string, optional): JSON schema for output format
+* `supportedContentTypes` (object, optional): Supported content types
+  * `input` (array): Accepted input content types
+  * `output` (array): Produced output content types
+* `security` (object, optional): Security configuration
+  * `transport` (string): Transport protocol (e.g., `https`)
+  * `encryption` (string): Encryption standard (e.g., `TLS 1.3`)
+  * `notes` (string, optional): Additional security notes
+* `contact` (object, optional): Contact information
+  * `name` (string): Contact name or team name
+  * `email` (string): Contact email address
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Agent card saved successfully",
+  "data": {
+    "exists": true,
+    "card": {
+      "id": "urn:agent:my-agent",
+      "name": "My AI Agent",
+      "description": "An AI assistant for code review and development",
+      "version": "1.0.0",
+      "url": "https://example.com/api/v1",
+      "documentation": "https://example.com/docs",
+      "protocols": ["a2a_v0.2", "jsonrpc"],
+      "authentication": {
+        "scheme": "api_key",
+        "in": "header",
+        "name": "X-API-Key",
+        "example": "nut_abc123...",
+        "description": "Provide an API key via X-API-Key header"
+      },
+      "capabilities": [
+        {
+          "id": "code-review",
+          "skill": "code-review",
+          "description": "Reviews code for best practices and bugs",
+          "endpoint": "/api/v1/review",
+          "method": "POST",
+          "enabled": true,
+          "inputMimeType": "application/json",
+          "inputSchema": "{ \"type\": \"object\", \"properties\": {...} }",
+          "outputMimeType": "application/json",
+          "outputSchema": "{ \"type\": \"object\", \"properties\": {...} }"
+        }
+      ],
+      "supportedContentTypes": {
+        "input": ["application/json", "text/plain"],
+        "output": ["application/json", "text/markdown"]
+      },
+      "security": {
+        "transport": "https",
+        "encryption": "TLS 1.3",
+        "notes": "All communications must use TLS 1.3 or higher"
+      },
+      "contact": {
+        "name": "Team Name",
+        "email": "team@example.com"
+      }
+    },
+    "publicPath": "/.well-known/agent-card.json",
+    "storagePath": "/path/to/.nut/agent-card.json",
+    "updatedAt": "2024-08-16T10:35:00Z"
+  }
+}
+```
+
+**Error Response (Missing/Invalid Card):**
+
+```json
+{
+  "success": false,
+  "error": "Missing or invalid agent card payload"
+}
+```
+
+**Error Response (Unauthorized):**
+
+```json
+{
+  "success": false,
+  "error": "Authentication required"
+}
+```
+
+**Example:**
+
+```bash
+# Get agent card with session cookie
+curl http://localhost:3001/api/v1/identity/agent-card \
+  -H "Cookie: nut-session=YOUR_SESSION_TOKEN"
+
+# Get agent card with API key
+curl http://localhost:3001/api/v1/identity/agent-card \
+  -H "X-API-Key: YOUR_API_KEY"
+
+# Update agent card with API key
+curl -X PUT http://localhost:3001/api/v1/identity/agent-card \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "card": {
+      "id": "urn:agent:my-agent",
+      "name": "My AI Agent",
+      "description": "An AI assistant for code review and development",
+      "version": "1.0.0",
+      "url": "https://example.com/api/v1",
+      "documentation": "https://example.com/docs",
+      "protocols": ["a2a_v0.2", "jsonrpc"],
+      "authentication": {
+        "scheme": "api_key",
+        "in": "header",
+        "name": "X-API-Key",
+        "example": "nut_abc123...",
+        "description": "Provide an API key via X-API-Key header"
+      },
+      "capabilities": [
+        {
+          "id": "code-review",
+          "skill": "code-review",
+          "description": "Reviews code for best practices and bugs",
+          "endpoint": "/api/v1/review",
+          "method": "POST",
+          "enabled": true,
+          "inputMimeType": "application/json",
+          "outputMimeType": "application/json"
+        }
+      ],
+      "supportedContentTypes": {
+        "input": ["application/json", "text/plain"],
+        "output": ["application/json", "text/markdown"]
+      },
+      "security": {
+        "transport": "https",
+        "encryption": "TLS 1.3",
+        "notes": "All communications must use TLS 1.3 or higher"
+      },
+      "contact": {
+        "name": "Team Name",
+        "email": "team@example.com"
+      }
+    }
+  }'
+
+# Public access (no authentication required)
+curl http://localhost:3001/.well-known/agent-card.json
+```
 
 #### User Settings API
 
@@ -2776,7 +3118,7 @@ Coconut includes an optional, file-based authentication system for team deployme
 ### Design Philosophy
 
 * **Opt-in by default** - Works without authentication for local/solo use
-* **File-based storage** - No database required, auth config lives in `.nut/auth.json`
+* **File-based storage** - No database required, auth config stored in OS application data directory
 * **Email whitelist model** - Admins pre-configure allowed users
 * **Role-based access** - Support for multiple team roles
 * **Non-breaking** - Existing projects work identically with or without auth
@@ -2786,7 +3128,6 @@ Coconut includes an optional, file-based authentication system for team deployme
 #### Initialize Authentication
 
 ```bash
-# From your project root
 nut auth init
 ```
 
@@ -2794,9 +3135,34 @@ You'll be prompted for:
 
 * Admin email address
 * Admin name
-* Admin password (minimum 8 characters)
+* Whether to enable authentication immediately
 
-This creates `.nut/auth.json` with `enabled: false` by default.
+To skip the prompts and run non-interactively (useful for CI/CD or scripting):
+
+```bash
+nut auth init \
+  --email "admin@example.com" \
+  --name "Admin User" \
+  --enable \
+  --force
+```
+
+**Available flags:**
+
+| Flag                  | Description                                    |
+| --------------------- | ---------------------------------------------- |
+| `-e, --email <email>` | Admin email address                            |
+| `-n, --name <name>`   | Admin name (default: "Admin")                  |
+| `--enable`            | Enable authentication immediately              |
+| `-f, --force`         | Overwrite existing auth.json without prompting |
+
+This creates `auth.json` in your OS application data directory with `enabled: false` by default (unless `--enable` is passed):
+
+* **macOS:** `~/Library/Application Support/coconuts/auth.json`
+* **Windows:** `%APPDATA%\coconuts\auth.json`
+* **Linux:** `~/.local/share/coconuts/auth.json`
+
+You can override this location with the `COCONUT_DATA_DIR` environment variable.
 
 #### Enable Authentication
 
@@ -2943,19 +3309,21 @@ When toggling authentication on/off, all sessions are automatically invalidated:
 * All users must re-authenticate
 * Ensures clean security state
 
-#### File Permissions
+#### File Location & Permissions
 
-**Important:** Add `.nut/auth.json` to your `.gitignore`:
+Authentication configuration is stored in your OS application data directory (not in your project), so it:
 
-```bash
-echo ".nut/auth.json" >> .gitignore
-```
+* Won't accidentally be committed to version control
+* Is shared across all Coconut projects on your machine
+* Contains sensitive data that should be protected
 
-This file contains:
+The file contains:
 
 * Password hashes
 * Session secrets
 * API key hashes
+
+Ensure appropriate file permissions on your system to protect this data.
 
 ### Production Deployment
 
@@ -2991,7 +3359,7 @@ This file contains:
 
 ### Configuration File Structure
 
-`.nut/auth.json` (created by `nut auth init`):
+`auth.json` in your OS application data directory (created by `nut auth init`):
 
 ```json
 {
@@ -3059,8 +3427,14 @@ This file contains:
 
 **Solution:** Use CLI to reset:
 
-1. Edit `.nut/auth.json` directly to add a new admin user
-2. Or delete `.nut/auth.json` and run `nut auth init` again
+1. Edit `auth.json` directly (in your OS app data directory) to add a new admin user
+2. Or delete the `auth.json` file and run `nut auth init` again
+
+To find the auth.json location on your system:
+
+* **macOS:** `~/Library/Application Support/coconuts/auth.json`
+* **Windows:** `%APPDATA%\coconuts\auth.json`
+* **Linux:** `~/.local/share/coconuts/auth.json`
 
 ### API Reference
 
@@ -3125,6 +3499,27 @@ From the root of your project where you want to setup your `.nut`.
 ```bash
 nut init
 ```
+
+For non-interactive usage (CI/CD, scripting):
+
+```bash
+nut init \
+  --name "my-project" \
+  --description "My awesome project" \
+  --id "my-project-id" \
+  --force
+```
+
+##### Init Command Options
+
+| Flag                          | Description                                       | Example                      |
+| ----------------------------- | ------------------------------------------------- | ---------------------------- |
+| `--name <name>`               | Repository name                                   | `--name "my-project"`        |
+| `--description <description>` | Repository description                            | `--description "My project"` |
+| `--id <id>`                   | Coconut instance ID (saved to `.nut/config.json`) | `--id "my-project-id"`       |
+| `--force`                     | Force initialization even if already initialized  | `--force`                    |
+
+> **Note:** When `--name` and `--description` are both provided, the command runs non-interactively. The `--id` flag sets `coconut.id` in `.nut/config.json`, which is used for logging and identification.
 
 ### Change Proposals
 
@@ -4793,4 +5188,15 @@ You're now ready to create first change proposal and get it started:
 ### Fixes
 
 * Text tweaks to improve UI
+
+
+## v1.0.70 - Coco Loco
+
+### Features
+
+* Adds a non-interactive `nut auth` option
+
+### Fixes
+
+* NA
 
